@@ -25,16 +25,16 @@ struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads)
 {
 	// TODO: init an mapreduce struct.
-	int fd[2] = {0,1}; // 0 for reading. 1 is for writing
+	int fd[2] = {0,1}; // file descriptor, 0 for reading. 1 is for writing
 	// TODO: create a buffer
-  struct map_reduce* my_mr = (map_reduce*) malloc (sizeof());
-	for(int i=0; i<threads, i++){ // TODO: need change
-  	map(my_mr, fd[0], i, threads);
+  struct map_reduce* my_mr = (map_reduce*) malloc (4*sizeof(int));
+	for(int id=0; id<threads, id++){ // TODO: need change
+  	map(my_mr, fd[0], id, threads); // this one will call mr_produce
 	}
-	// TODO: call the reduce function
+	reduce(my_mr, fd[1], threads)  // TODO: call the reduce function
 	// TODO: let them conmunicate through the buffer
-	// return my_mr;
-	// TODO: return NULL; // on failure
+	return my_mr;
+
 }
 
 /* Destroys and cleans up an existing instance of the MapReduce framework
@@ -71,6 +71,9 @@ mr_finish(struct map_reduce *mr)
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
+	kv->key;
+	kv->value;
+	kv->keysz + kv->valuesz = total size;
 	return 1; // successful
 	return -1; // on error
 }
