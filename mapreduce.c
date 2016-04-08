@@ -27,13 +27,13 @@ mr_create(map_fn map, reduce_fn reduce, int threads)
 	// TODO: init an mapreduce struct.
 	int fd[2] = {0,1}; // file descriptor, 0 for reading. 1 is for writing
 	// TODO: create a buffer
-  struct map_reduce* my_mr = (map_reduce*) malloc (4*sizeof(int));
-	for(int id=0; id<threads, id++){ // TODO: need change
-  	map(my_mr, fd[0], id, threads); // this one will call mr_produce
+  struct map_reduce* my_mr = (struct map_reduce*) malloc (4*sizeof(int));
+	for(int id=0; id<threads; id++){ // TODO: need change
+  	map(struct my_mr, fd[0], id, threads); // this one will call mr_produce
 	}
-	reduce(my_mr, fd[1], threads)  // TODO: call the reduce function
+	reduce(struct my_mr, fd[1], threads)  // TODO: call the reduce function
 	// TODO: let them conmunicate through the buffer
-	return my_mr;
+	return struct  my_mr;
 
 }
 
