@@ -39,7 +39,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads)
 
 /* Destroys and cleans up an existing instance of the MapReduce framework
  * Any resources which were acquired or created in mr_create should be released or destroyed here.
- */
+  Hello World*/
 void
 mr_destroy(struct map_reduce *mr)
 {
