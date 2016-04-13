@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 #include "mapreduce.h"
-#include "<pthread.h>"
+#include <pthread.h>
 
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
