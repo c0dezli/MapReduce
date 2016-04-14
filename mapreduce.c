@@ -31,7 +31,7 @@
  */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-	int fd; // file descriptor
+	//int fd; // file descriptor
 
 	for(int id=0; id<threads; id++){ // TODO: need change
 		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE+sizeof(pthread_mutex_t));
@@ -40,10 +40,10 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		my_mr.reduce = reduce;
 		my_mr.threads = threads;
 		mr_start(my_mr,1,0);
-	}
+                }
 	//map(my_mr, fd[0], id, threads); // this one will call mr_produce
 
-	reduce(my_mr, fd[1], threads);  // TODO: call the reduce function
+	reduce(my_mr, fd, threads);  // TODO: call the reduce function
 	// TODO: let them conmunicate through the buffer
 	return  my_mr;
 
@@ -77,12 +77,12 @@ mr_destroy(struct map_reduce *mr) {
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-	fd = open(inpath);
+	mr.fd = open(inpath,O_RDONLY);//read only
 
 	pthread_t c;
-	pthread_create(&c, NULL, function, )
+	pthread_create(&c, NULL, map, NULL);//pthread_create(&c, NULL, function, NULL);
 	int id = my_mr.id, threads = my_mr.threads;
-	my_mr.map(my_mr, fd, id, threads)
+	//my_mr.map(my_mr, mr.fd, id, threads);
 
 	// TODO: create threads  |
 	// TODO: setup buffer    | do these 3 in parallel

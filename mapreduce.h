@@ -69,9 +69,10 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  * functions.
  */
 struct map_reduce {
-	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+        static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	char myBuffer[MR_BUFFER_SIZE];
-
+        int fd;
 	map_fn map;
 	reduce_fn reduce;
 	int threads, id;
@@ -185,4 +186,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif
+#endif         		 				
