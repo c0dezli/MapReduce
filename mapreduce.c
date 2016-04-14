@@ -12,9 +12,7 @@
 
 /* Header includes */
 #include <stdlib.h>
-
 #include "mapreduce.h"
-#include <pthread.h>
 
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
@@ -32,15 +30,19 @@
  * NULL to indicate failure.
  */
 struct map_reduce*
-mr_create(map_fn map, reduce_fn reduce, int threads)
-{
-	// TODO: init an mapreduce struct.
-	int fd[2] = {0,1}; // file descriptor, 0 for reading. 1 is for writing
-	// TODO: create a buffer
-  struct map_reduce* my_mr = (struct map_reduce*) malloc (4*sizeof(int));
+mr_create(map_fn map, reduce_fn reduce, int threads) {
+	int fd; // file descriptor
+
 	for(int id=0; id<threads; id++){ // TODO: need change
-  	map(my_mr, fd[0], id, threads); // this one will call mr_produce
+		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE+sizeof(pthread_mutex_t));
+		my_mr.id = id;
+		my_mr.map = map;
+		my_mr.reduce = reduce;
+		my_mr.threads = threads;
+		mr_start(my_mr,1,0);
 	}
+	//map(my_mr, fd[0], id, threads); // this one will call mr_produce
+
 	reduce(my_mr, fd[1], threads);  // TODO: call the reduce function
 	// TODO: let them conmunicate through the buffer
 	return  my_mr;
@@ -55,9 +57,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads)
  * mr  Pointer to the instance to destroy and clean up
  */
 void
-mr_destroy(struct map_reduce *mr)
-{
-free(mr);
+mr_destroy(struct map_reduce *mr) {
+	free(mr);
 
 }
 
@@ -75,8 +76,14 @@ free(mr);
  * an error.
  */
 int
-mr_start(struct map_reduce *mr, const char *inpath, const char *outpath)
-{
+mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+	fd = open(inpath);
+
+	pthread_t c;
+	pthread_create(&c, NULL, function, )
+	int id = my_mr.id, threads = my_mr.threads;
+	my_mr.map(my_mr, fd, id, threads)
+
 	// TODO: create threads  |
 	// TODO: setup buffer    | do these 3 in parallel
 	// TODO: sync            |
