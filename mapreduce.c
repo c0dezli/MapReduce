@@ -64,7 +64,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	// args->nmaps = mr->threads;
 
 
-	for(int a=0; a<(args->nmaps); a++){
+	for(int a=0; a<(mr->nmaps); a++){
 		pthread_t c;
 		pthread_create(&c, NULL, map_wrapper(mr), (void*) args);
 	}
