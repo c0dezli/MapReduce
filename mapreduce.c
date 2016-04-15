@@ -68,24 +68,25 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
-	int fd=1,id=1;
-	int struct_size = MR_BUFFER_SIZE + sizeof(pthread_mutex_t) +3 * sizeof(int);//sizeof(map_fn) +//sizeof(reduce_fn);
+	int fd=1;
+//	int struct_size = MR_BUFFER_SIZE + sizeof(pthread_mutex_t) +3 * sizeof(int);//sizeof(map_fn) +//sizeof(reduce_fn);
 
-//	printf("%d", struct_size);
+for(int id=0;id<threads;id++){
+struct map_reduce* my_mr = (struct map_reduce*) malloc (4*sizeof(int));
+//	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
 
-	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
 //        my_mr->threads = threads;
  //       my_mr->id = id;
 //        my_mr->fd = fd;
-//        map(my_mr, fd, id, threads);
-//        reduce(my_mr, fd, threads);
+        map(my_mr, fd, id, threads);
+//       reduce(my_mr, fd, threads);
 //	my_mr->id = threads;
 
 	//my_mr->map = map;
 	//my_mr->reduce = reduce;
 	//my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
-
-	return  my_mr;
+}
+	return my_mr;
 }
 
 /**
@@ -115,7 +116,7 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
-//	mr_destroy(mr);
+
 	return 0; // if every M&R callback returned 0
 	// TODO: else return -1
 }
