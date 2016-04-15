@@ -71,13 +71,13 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE +
 																														sizeof(pthread_mutex_t) +
 																														3 * sizeof(int)
-																														//sizeof(map_fn) +
-																														//sizeof(reduce_fn));
+																														sizeof(map_fn) +
+																														sizeof(reduce_fn));
 																													);
 	my_mr->id = threads;
-	// my_mr->map = map;
-	// my_mr->reduce = reduce;
-	my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
+	my_mr->map = map;
+	my_mr->reduce = reduce;
+	//my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
 
 	return  my_mr;
 }
@@ -91,6 +91,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
+	free(mr->myBuffer);
 	free(mr);
 
 }
