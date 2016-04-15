@@ -44,13 +44,18 @@
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
+	 struct map_args {
+	 	struct map_reduce *mr;
+	 	int mr, infd, nmaps, id;
+	 };
+
 	void *map_wrapper(void* arg) {
+		struct map_reduce *args = arg;
+		int infd = args->infd,
+				id = args->id,
+				nmaps = args->nmaps; // Get arguments
 
-		int infd = arg->infd,
-				id = arg->id,
-				nmaps = arg->nmaps; // Get arguments
-
-		int ret = arg->map(arg, infd, id, nmaps); // call function
+		int ret = args->map(args->mr, infd, id, nmaps); // call function
 	}
 
 	int fd = open(inpath, O_RDONLY);
