@@ -9,7 +9,6 @@
  * used for the *public-facing* API.
  */
 
-
 /* Header includes */
 #include <stdlib.h>
 #include "mapreduce.h"
@@ -17,35 +16,18 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
-void *add_wrapper(void*);
 
-struct map_args
-{
-struct map_reduce *mr;
-int infd;
-int id;
-int nmaps;
-};
 
-struct reduce_args
-{
-struct map_reduce *mr;
-int outfd;
-int nmaps;
-};
+// struct reduce_args
+// {
+// 	struct map_reduce *mr;
+// 	int outfd;
+// 	int nmaps;
+// };
 
-void *map_wrapper(void* arg)
-{
-/*
-struct map_args *args = arg;
 
-struct map_reduce *mr = args->mr;
-int infd = args->infd;
-int id = args->id;
-int nmaps = args->nmaps;
-map_fn */
-int ret = mr->map(arg->mr, arg->infd, arg->id, arg->nmaps);
-}
+
+
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
@@ -61,23 +43,31 @@ int ret = mr->map(arg->mr, arg->infd, arg->id, arg->nmaps);
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+	void *map_wrapper(void* arg) {
+
+		int infd = arg->infd,
+				id = arg->id,
+				nmaps = arg->nmaps; // Get arguments
+
+		int ret = arg->map(arg, infd, id, nmaps); // call function
+	}
+
 	int fd = open(inpath, O_RDONLY);
 	// TODO: create threads  |
 	// TODO: setup buffer    | do these 3 in parallel
 	// TODO: sync            |
 
-struct map_args *args = malloc(sizeof(struct map_args));
-args->mr = mr->map;
-args->infd = fd;
-args->id = mr->id;
-args->nmaps = mr->threads;
+	struct map_args *args = malloc(sizeof(struct map_args));
+	args->mr = mr->map;
+	args->infd = fd;
+	args->id = mr->id;
+	args->nmaps = mr->threads;
 
 
-for(int a=0;a<args->nmaps;a++)
-{ 
-	pthread_t c;
-	pthread_create(&c, NULL, map_wrapper, (void*) args);
-}
+	for(int a=0; a<(args->nmaps); a++){
+		pthread_t c;
+		pthread_create(&c, NULL, map_wrapper(mr), (void*) args);
+	}
 //	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
 
 	if( access(outpath, F_OK) != -1){
@@ -137,7 +127,7 @@ for(int id=0;id<threads;id++){
  */
 void
 mr_destroy(struct map_reduce *mr) {
-	//free(mr->myBuffer);
+	// free(mr->myBuffer);
 	free(mr);
 
 }

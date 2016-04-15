@@ -73,10 +73,16 @@ struct map_reduce {
 	char *myBuffer; // create the buffer
 	int *map, *reduce; // save the reduce
 	int threads, id;//, fd;
-int count;//counts bytes in buffer
+  int count;//counts bytes in buffer
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes
 //into buffer pointers to the 2 key values and the size of the key values (4)
+
+  // -------arg for map function----------------
+  int infd;
+  int id;
+  int nmaps;
+  // -------------------------------------------
 };
 
 /**
@@ -187,4 +193,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif
