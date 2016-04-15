@@ -38,9 +38,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	// TODO: sync            |
 
 	pthread_t c;
-	pthread_create(&c, NULL, mr->map, NULL);
+//	pthread_create(&c, NULL, mr->map, NULL);
 
-	mr->fd = open(inpath, O_RDONLY); //open the inpath
+	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
 
 	if( access(outpath, F_OK) != -1){
 		//TODO: file exists
@@ -49,7 +49,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 		//TODO: file doesn't exist
 	}
 
-	mr_finish(mr);
+//	mr_finish(mr);
 	return 0;
 }
 
@@ -68,16 +68,19 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
-	int struct_size = MR_BUFFER_SIZE +
-	                  sizeof(pthread_mutex_t) +
-										3 * sizeof(int);
-										//sizeof(map_fn) +
-										//sizeof(reduce_fn);
+	int fd=1,id=1;
+	int struct_size = MR_BUFFER_SIZE + sizeof(pthread_mutex_t) +3 * sizeof(int);//sizeof(map_fn) +//sizeof(reduce_fn);
 
-	printf("%d", struct_size);
+//	printf("%d", struct_size);
 
 	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
-	my_mr->id = threads;
+//        my_mr->threads = threads;
+ //       my_mr->id = id;
+//        my_mr->fd = fd;
+//        map(my_mr, fd, id, threads);
+//        reduce(my_mr, fd, threads);
+//	my_mr->id = threads;
+
 	//my_mr->map = map;
 	//my_mr->reduce = reduce;
 	//my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
@@ -112,7 +115,7 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
-	mr_destroy(mr);
+//	mr_destroy(mr);
 	return 0; // if every M&R callback returned 0
 	// TODO: else return -1
 }
