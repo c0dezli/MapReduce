@@ -74,6 +74,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 										//sizeof(map_fn) +
 										//sizeof(reduce_fn);
 
+	printf("%d", struct_size);
+	
 	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
 	my_mr->id = threads;
 	//my_mr->map = map;
