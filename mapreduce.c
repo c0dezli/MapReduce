@@ -46,7 +46,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
 	 struct map_args {
 	 	struct map_reduce *mr;
-	 	int mr, infd, nmaps, id;
+	 	int infd, nmaps, id;
 	 };
 
 	void *map_wrapper(void* arg) {
