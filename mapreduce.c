@@ -78,11 +78,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 	// my_mr->map = map;
 	// my_mr->reduce = reduce;
 	my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
-  for(int id=0; id<threads; id++){ // TODO: need change
-  	map(struct my_mr, fd[0], id, threads); // this one will call mr_produce
-	}
-
-
 
 	return  my_mr;
 }
