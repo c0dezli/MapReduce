@@ -55,7 +55,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 				id = args->id,
 				nmaps = args->nmaps; // Get arguments
 
-		int ret = args->map(args->mr, infd, id, nmaps); // call function
+		int ret = args->map(args, infd, id, nmaps); // call function
 	}
 
 	int fd = open(inpath, O_RDONLY);
