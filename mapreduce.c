@@ -67,11 +67,13 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
  */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
+
 		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE +
 																														sizeof(pthread_mutex_t) +
-																														3 * sizeof(int) +
-																														sizeof(map_fn) +
-																														sizeof(reduce_fn));
+																														3 * sizeof(int)
+																														//sizeof(map_fn) +
+																														//sizeof(reduce_fn));
+																													);
 		my_mr->id = threads;
 		// my_mr->map = map;
 		// my_mr->reduce = reduce;
