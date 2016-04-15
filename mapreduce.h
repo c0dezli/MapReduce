@@ -36,11 +36,11 @@ struct map_reduce;
  */
 
 /**
- * Function signature for caller-provided Map functions.  A Map function will
- * read input using the file descriptor infd, process it, and call mr_produce
- * for each key-value pair it outputs.  The framework must give each Map thread
- * an independent input file descriptor so they do not interfere with each
- * other.
+ * Function signature for caller-provided Map functions.
+ * A Map function will read input using the file descriptor infd, process it, and call mr_produce
+ * for each key-value pair it outputs.
+ * The framework must give each Map thread an independent input file descriptor
+ * so they do not interfere with each other.
  *
  * Since there will be many Map threads, each one should be given a unique id
  * from 0 to (nmaps - 1).
@@ -69,13 +69,11 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  * functions.
  */
 struct map_reduce {
-	//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-        static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-	char myBuffer[MR_BUFFER_SIZE];
-        int fd;
-	map_fn map;
-	reduce_fn reduce;
-	int threads, id;
+  static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; // this is the lock
+	char myBuffer[MR_BUFFER_SIZE]; // create the buffer
+	map_fn map;  // save the map
+	reduce_fn reduce; // save the reduce
+	int threads, id, fd;
 };
 
 /**
@@ -186,4 +184,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif

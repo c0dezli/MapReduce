@@ -18,6 +18,42 @@
 #define MR_BUFFER_SIZE 1024
 
 /**
+ * Begins a multithreaded MapReduce operation.  This operation will process data
+ * from the given input file and write the result to the given output file.
+ *
+ * mr       Pointer to the instance to start
+ * inpath   Path to the file from which input is read.  The framework should
+ *          make sure that each Map thread gets an independent file descriptor
+ *          for this file.
+ * outpath  Path to the file to which output is written.
+ *
+ * Returns 0 if the operation was started successfuly and nonzero if there was
+ * an error.
+ */
+int
+mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+
+	// TODO: create threads  |
+	// TODO: setup buffer    | do these 3 in parallel
+	// TODO: sync            |
+
+	pthread_t c;
+	pthread_create(&c, NULL, map, NULL);
+
+	mr.fd = open(inpath, O_RDONLY); //open the inpath
+
+	if( access(outpath, F_OK) != -1){
+		//TODO: file exists
+	}
+	else {
+		//TODO: file doesn't exist
+	}
+
+	mr_finish(mr);
+	return 0;
+}
+
+/**
  * Allocates and initializes an instance of the MapReduce framework.  This
  * function should allocate a map_reduce structure and any memory or resources
  * that may be needed by later functions.
@@ -31,22 +67,13 @@
  */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-	//int fd; // file descriptor
-
-	for(int id=0; id<threads; id++){ // TODO: need change
-		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE+sizeof(pthread_mutex_t));
-		my_mr.id = id;
+	for(int id = 0; id < threads; id++){
+		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE + sizeof(pthread_mutex_t));
+		my_mr.id = threads;
 		my_mr.map = map;
 		my_mr.reduce = reduce;
-		my_mr.threads = threads;
-		mr_start(my_mr,1,0);
-                }
-	//map(my_mr, fd[0], id, threads); // this one will call mr_produce
-
-	reduce(my_mr, fd, threads);  // TODO: call the reduce function
-	// TODO: let them conmunicate through the buffer
+	}
 	return  my_mr;
-
 }
 
 /**
@@ -63,38 +90,6 @@ mr_destroy(struct map_reduce *mr) {
 }
 
 /**
- * Begins a multithreaded MapReduce operation.  This operation will process data
- * from the given input file and write the result to the given output file.
- *
- * mr       Pointer to the instance to start
- * inpath   Path to the file from which input is read.  The framework should
- *          make sure that each Map thread gets an independent file descriptor
- *          for this file.
- * outpath  Path to the file to which output is written.
- *
- * Returns 0 if the operation was started successfuly and nonzero if there was
- * an error.
- */
-int
-mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-	mr.fd = open(inpath,O_RDONLY);//read only
-
-	pthread_t c;
-	pthread_create(&c, NULL, map, NULL);//pthread_create(&c, NULL, function, NULL);
-	int id = my_mr.id, threads = my_mr.threads;
-	//my_mr.map(my_mr, mr.fd, id, threads);
-
-	// TODO: create threads  |
-	// TODO: setup buffer    | do these 3 in parallel
-	// TODO: sync            |
-	// TODO: open the inpath
-	// TODO: check the outpath
-	// TODO: write the outpath
-
-	return 0;
-}
-
-/**
  * Blocks until the entire MapReduce operation is complete.  When this function
  * returns, you are guaranteeing to the caller that all Map and Reduce threads
  * have completed.
@@ -107,13 +102,15 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 int
 mr_finish(struct map_reduce *mr)
 {
+	mr_destroy(mr);
 	return 0; // if every M&R callback returned 0
 	// TODO: else return -1
 }
 
 /**
  * Called by a Map thread each time it produces a key-value pair to be consumed
- * by the Reduce thread.  If the framework cannot currently store another
+ * by the Reduce thread.
+ * If the framework cannot currently store another
  * key-value pair, this function should block until it can.
  *
  * mr  Pointer to the MapReduce instance
@@ -128,9 +125,10 @@ mr_finish(struct map_reduce *mr)
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
-//	kv->key;
-//	kv->value;
-//	kv->keysz + kv->valuesz = total size;
+
+	//	kv->key;
+	//	kv->value;
+	//	kv->keysz + kv->valuesz = total size;
 	return 1; // successful
 	return -1; // on error
 }
