@@ -43,6 +43,7 @@
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+
 	void *map_wrapper(void* arg) {
 
 		int infd = arg->infd,
@@ -66,7 +67,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
 	for(int a=0; a<(mr->nmaps); a++){
 		pthread_t c;
-		pthread_create(&c, NULL, map_wrapper(mr), (void*) args);
+		pthread_create(&c, NULL, map_wrapper, (void*) mr);
 	}
 //	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
 
