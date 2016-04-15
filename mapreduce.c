@@ -17,6 +17,35 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
+void *add_wrapper(void*);
+
+struct map_args
+{
+struct map_reduce *mr;
+int infd;
+int id;
+int nmaps;
+};
+
+struct reduce_args
+{
+struct map_reduce *mr;
+int outfd;
+int nmaps;
+};
+
+void *map_wrapper(void* arg)
+{
+/*
+struct map_args *args = arg;
+
+struct map_reduce *mr = args->mr;
+int infd = args->infd;
+int id = args->id;
+int nmaps = args->nmaps;
+map_fn */
+int ret = mr->map(arg->mr, arg->infd, arg->id, arg->nmaps);
+}
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
@@ -32,15 +61,24 @@
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-
+	int fd = open(inpath, O_RDONLY);
 	// TODO: create threads  |
 	// TODO: setup buffer    | do these 3 in parallel
 	// TODO: sync            |
 
-	pthread_t c;
-//	pthread_create(&c, NULL, mr->map, NULL);
+struct map_args *args = malloc(sizeof(struct map_args));
+args->mr = mr->map;
+args->infd = fd;
+args->id = mr->id;
+args->nmaps = mr->threads;
 
-	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
+
+for(int a=0;a<args->nmaps;a++)
+{ 
+	pthread_t c;
+	pthread_create(&c, NULL, map_wrapper, (void*) args);
+}
+//	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
 
 	if( access(outpath, F_OK) != -1){
 		//TODO: file exists
@@ -68,17 +106,18 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
-	int fd=1;
+//	int fd=1;
 //	int struct_size = MR_BUFFER_SIZE + sizeof(pthread_mutex_t) +3 * sizeof(int);//sizeof(map_fn) +//sizeof(reduce_fn);
+struct map_reduce* my_mr = (struct map_reduce*) malloc (sizeof(my_mr));
 
 for(int id=0;id<threads;id++){
-struct map_reduce* my_mr = (struct map_reduce*) malloc (4*sizeof(int));
+
 //	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
 
 //        my_mr->threads = threads;
  //       my_mr->id = id;
 //        my_mr->fd = fd;
-        map(my_mr, fd, id, threads);
+//        map(my_mr, fd, id, threads);
 //       reduce(my_mr, fd, threads);
 //	my_mr->id = threads;
 
