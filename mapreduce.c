@@ -38,9 +38,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	// TODO: sync            |
 
 	pthread_t c;
-	pthread_create(&c, NULL, map, NULL);
+	pthread_create(&c, NULL, mr->map, NULL);
 
-	mr.fd = open(inpath, O_RDONLY); //open the inpath
+	mr->fd = open(inpath, O_RDONLY); //open the inpath
 
 	if( access(outpath, F_OK) != -1){
 		//TODO: file exists
@@ -67,12 +67,12 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
  */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-	for(int id = 0; id < threads; id++){
+//	for(int id = 0; id < threads; id++){
 		struct map_reduce* my_mr = (struct map_reduce*) malloc (MR_BUFFER_SIZE + sizeof(pthread_mutex_t));
-		my_mr.id = threads;
-		my_mr.map = map;
-		my_mr.reduce = reduce;
-	}
+		my_mr->id = threads;
+		my_mr->map = map;
+		my_mr->reduce = reduce;
+//	}
 	return  my_mr;
 }
 

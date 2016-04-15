@@ -19,13 +19,14 @@ endif
 ### Other flags
 
 # Language features (C99 etc.)
-CFLAGS += -std=c99 -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L -D_BSD_SOURCE -D_XOPEN_SOURCE -pthread
+CFLAGS += -std=c99 -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L -D_BSD_SOURCE -D_XOPEN_SOURCE -D_GNU_SOURCE -pthread
 
 # Warning and error settings
-CFLAGS += -Wall -Wextra
+CFLAGS += -Wall -Wextra -fstack-protector
 
-ERROR_FLAGS =  -Werror -Wno-sign-compare -Wno-type-limits
-ERROR_FLAGS += -Wno-unused-variable -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-but-set-variable
+ERROR_FLAGS =  -Werror -Wbad-function-cast -Wpointer-arith -Wshadow -Waggregate-return
+ERROR_FLAGS += -Wno-sign-compare -Wno-type-limits
+ERROR_FLAGS += -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-label -Wno-unused-but-set-variable
 
 # Insert debugging symbols
 CFLAGS += -g
@@ -56,15 +57,14 @@ tarball: clean
 
 ### Build rules
 
-$(BINS): LDLIBS+=-lpthread -lrt
+# Wrap some functions
+WRAPPED = malloc calloc realloc free strdup strndup pthread_create pthread_join
+$(BINS): LDFLAGS += $(foreach sym,$(WRAPPED), -Wl,--wrap=$(sym))
+
+$(BINS): LDLIBS += -lpthread -lrt
 $(BINS): $(LIBRARY) mapreduce.o
 	$(CC) $(LDFLAGS) -Wl,--defsym=main=$(subst -,_,$@)_main -Wl,--whole-archive $(LIBRARY) -Wl,--no-whole-archive $(filter-out $(LIBRARY),$^) $(LOADLIBES) $(LDLIBS) -o $@
 
-WRAPPED = malloc calloc realloc
-COMMA = ,
-run-tests: LDFLAGS+=$(addprefix -Wl$(COMMA)--wrap=,$(WRAPPED))
-
-$(filter-out run-tests,$(BINS)): LDFLAGS+=$(foreach sym,$(WRAPPED),-Wl,--defsym=__real_$(sym)=$(sym))
 
 ### Automatic dependency generation
 Makefile.dep: $(SRCS)
