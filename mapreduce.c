@@ -40,7 +40,7 @@ static void *map_wrapper(void* arg) {
 		 id = args->id,
 		 nmaps = args->nmaps;
 
- int ret = args->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+ int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
 }
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
@@ -64,7 +64,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 		//TODO: file doesn't exist
 	}
 
-	struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args))
+	struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args));
 
 	args->mr = mr;
 	args->infd = open(inpath, O_RDONLY);
@@ -94,17 +94,15 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
-	for(int id=0; id<threads; id++) {
 		struct map_reduce* my_mr = (struct map_reduce*) malloc (sizeof(struct map_reduce)); //TODO ?
 
 		my_mr->map = map;									// Save the function inside the sturcture
 		my_mr->reduce = reduce;
 
-		my_mr->threads = threads;					// Save the static data
-		my_mr->mr_id = id;
+		my_mr->n_threads = threads;					// Save the static data
 
 		my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer
-	}
+
 		return my_mr;
 }
 
