@@ -4,7 +4,8 @@
  *
  * Place all of your implementation code in this file.  You are encouraged to
  * create helper functions wherever it is necessary or will make your code
- * clearer.  For these functions, you should follow the practice of declaring
+ * clearer.
+ * For these functions, you should follow the practice of declaring
  * them "static" and not including them in the header file (which should only be
  * used for the *public-facing* API.
  */
@@ -16,18 +17,31 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
+struct map_args {
+ struct map_reduce *mr;
+ int infd, nmaps, id;
+};
 
+struct reduce_args
+{
+	struct map_reduce *mr;
+	int outfd;
+	int nmaps;
+};
 
-// struct reduce_args
-// {
-// 	struct map_reduce *mr;
-// 	int outfd;
-// 	int nmaps;
-// };
+/*	Helper function that can be passed to the pthread_create to call the
+ *  map_fn
+ */
+static void *map_wrapper(void* arg) {
+ struct map_args *args = arg;
 
+ struct map_reduce *mr = args->mr; // Get mr struct pointer
+ int infd = args->infd,						 // Get arguments
+		 id = args->id,
+		 nmaps = args->nmaps;
 
-
-
+ int ret = args->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+}
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
@@ -43,47 +57,25 @@
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-
-	 struct map_args {
-	 	struct map_reduce *mr;
-	 	int infd, nmaps, id;
-	 };
-
-	void *map_wrapper(void* arg) {
-		struct map_reduce *args = arg;
-		int infd = args->infd,
-				id = args->id,
-				nmaps = args->nmaps; // Get arguments
-
-		int ret = args->map(args, infd, id, nmaps); // call function
-	}
-
-	int fd = open(inpath, O_RDONLY);
-	// TODO: create threads  |
-	// TODO: setup buffer    | do these 3 in parallel
-	// TODO: sync            |
-
-	// struct map_args *args = malloc(sizeof(map_args));
-	// args->mr = mr->map;
-	// args->infd = fd;
-	// args->id = mr->id;
-	// args->nmaps = mr->threads;
-
-
-	for(int a=0; a<(mr->nmaps); a++){
-		pthread_t c;
-		pthread_create(&c, NULL, map_wrapper, (void*) mr);
-	}
-//	int fd = open(inpath, O_RDONLY);//mr->fd = open(inpath, O_RDONLY); //open the inpath
-
-	if( access(outpath, F_OK) != -1){
+	if(access(outpath, F_OK) != -1){
 		//TODO: file exists
 	}
 	else {
 		//TODO: file doesn't exist
 	}
 
-//	mr_finish(mr);
+	struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args))
+
+	args->mr = mr;
+	args->infd = open(inpath, O_RDONLY);
+	args->namps = mr->threads;
+	args->id = mr->mr_id;
+
+	for(int i=0; i<(mr->threads); i++){
+		pthread_t c;
+		pthread_create(&c, NULL, map_wrapper, (void*) args);
+	}
+
 	return 0;
 }
 
@@ -102,22 +94,16 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
-	struct map_reduce* my_mr = (struct map_reduce*) malloc (sizeof(my_mr));
+	for(int id=0; id<threads; id++) {
+		struct map_reduce* my_mr = (struct map_reduce*) malloc (sizeof(struct map_reduce)); //TODO ?
 
-	for(int id=0;id<threads;id++) {
+		my_mr->map = map;									// Save the function inside the sturcture
+		my_mr->reduce = reduce;
 
-	//	struct map_reduce* my_mr = (struct map_reduce*) malloc (struct_size);
+		my_mr->threads = threads;					// Save the static data
+		my_mr->mr_id = id;
 
-	//        my_mr->threads = threads;
-	 //       my_mr->id = id;
-	//        my_mr->fd = fd;
-	//        map(my_mr, fd, id, threads);
-	//       reduce(my_mr, fd, threads);
-	//	my_mr->id = threads;
-
-		//my_mr->map = map;
-		//my_mr->reduce = reduce;
-		//my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE);
+		my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer
 	}
 		return my_mr;
 }
@@ -131,7 +117,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-	// free(mr->myBuffer);
+	free(mr->myBuffer);
 	free(mr);
 
 }

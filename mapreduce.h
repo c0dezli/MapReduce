@@ -69,20 +69,24 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  * functions.
  */
 struct map_reduce {
-  pthread_mutex_t lock; // this is the lock
-	char *myBuffer; // create the buffer
-	int *map, *reduce; // save the reduce
-	int threads;// fd;
-  int count;//counts bytes in buffer
+  pthread_mutex_t lock;      // this is the lock
+	char *myBuffer;            // create the buffer
+	int *map, *reduce;         // The functions
+
+	int threads,               // fd;
+      count,                 // counts bytes in buffer
+      mr_id;                 // id of map reduce structure
+
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes
 //into buffer pointers to the 2 key values and the size of the key values (4)
 
-  // -------arg for map function----------------
-  int infd;
-  int id;
-  int nmaps;
-  // -------------------------------------------
+  // // -------arg for map function----------------
+  // int map_infd;
+  // int map_id;
+  // int map_nmaps;
+  // // -------------------------------------------
+
 };
 
 /**
