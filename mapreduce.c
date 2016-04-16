@@ -29,7 +29,6 @@ struct reduce_args {
 };
 
 /*	Helper function that can be passed to the pthread_create to call the map_fn
- *
  */
 static void *map_wrapper(void* arg) {
  struct map_args *args = arg;
@@ -39,9 +38,23 @@ static void *map_wrapper(void* arg) {
 		 id = args->id,
 		 nmaps = args->nmaps;
 
- //int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+ int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
  return 0;
 }
+
+/*	Helper function that can be passed to the pthread_create to call the reduce_fn
+ */
+static void *reduce_wrapper(void* arg) {
+ struct reduce_args *args = arg;
+
+ struct map_reduce *mr = args->mr; // Get mr struct pointer
+ int outfd = args->outfd,						 // Get arguments
+		 nmaps = args->nmaps;
+
+ int ret = mr->reduce(mr, outfd, nmaps); // call function (HOW TO RETURN?????)
+ return 0;
+}
+
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
@@ -57,6 +70,22 @@ static void *map_wrapper(void* arg) {
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+
+	for(int i=0; i<(mr->n_threads); i++) {
+		struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args)),
+		 								 args_ins; // The instance
+
+		args_ins.mr = mr;
+		args_ins.infd = open(inpath, O_RDONLY);
+		args_ins.nmaps = mr->n_threads;
+		args_ins.id = i;
+
+		args = &args_ins;					// assign the instance to the pointer
+
+		pthread_t c;
+		pthread_create(&c, NULL, map_wrapper, (void*) args);
+	}
+
 	if(access(outpath, F_OK) != -1){
 		//TODO: file exists
 	}
@@ -64,21 +93,17 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 		//TODO: file doesn't exist
 	}
 
-	for(int i=0; i<(mr->n_threads); i++){
+	struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args)),
+									 args_ins; // The instance
 
-		struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args));
-		struct map_args args_ins;
+	args_ins.mr = mr;
+	args_ins.infd = open(outpath, O_RDONLY);
+	args_ins.nmaps = mr->n_threads;
+	args_ins.id = i;
 
-		args_ins.mr = mr;
-		args_ins.infd = open(inpath, O_RDONLY);
-		args_ins.nmaps = mr->n_threads;
-		args_ins.id = i;
-
-		args = &args_ins;
-
-		pthread_t c;
-		pthread_create(&c, NULL, map_wrapper, (void*) args);
-	}
+	args = &args_ins;					// assign the instance to the pointer
+	pthread_t c;
+	pthread_create(&c, NULL, reduce_wrapper, (void*) args);
 
 	return 0;
 }
@@ -99,17 +124,16 @@ struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 
 		struct map_reduce *my_mr = (struct map_reduce*) malloc (sizeof(struct map_reduce)); //TODO ?
-		// struct map_reduce my_mr;
-		struct map_reduce mr_ins;
+		 									 mr_ins;						// The instance
 
 		mr_ins.map_fn = map;									// Save the function inside the sturcture
 		mr_ins.reduce_fn = reduce;
 
-		mr_ins.n_threads = threads;					// Save the static data
+		mr_ins.n_threads = threads;				  	// Save the static data
 
 		mr_ins.myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer
 
-		my_mr = &mr_ins;
+		my_mr = &mr_ins;    									// Assign the instance to pointer
 		return my_mr;
 }
 
@@ -122,6 +146,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
+
 	//free(mr->myBuffer);
 	//free(mr);
 
