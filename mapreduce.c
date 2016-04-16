@@ -28,8 +28,8 @@ struct reduce_args {
 	int nmaps;
 };
 
-/*	Helper function that can be passed to the pthread_create to call the
- *  map_fn
+/*	Helper function that can be passed to the pthread_create to call the map_fn
+ *
  */
 static void *map_wrapper(void* arg) {
  struct map_args *args = arg;
@@ -67,11 +67,16 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	for(int i=0; i<(mr->n_threads); i++){
 
 		struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args));
+		struct map_args args_ins;
 
-		args->mr = mr;
-		args->infd = open(inpath, O_RDONLY);
-		args->nmaps = mr->n_threads;
-		args->id = i;
+		struct map_reduce mr_ins = mr;
+
+		args_ins.mr = mr;
+		args_ins.infd = open(inpath, O_RDONLY);
+		args_ins.nmaps = mr->n_threads;
+		args_ins.id = i;
+
+		args = &args_ins;
 
 		pthread_t c;
 		pthread_create(&c, NULL, map_wrapper, (void*) args);
@@ -119,8 +124,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-	free(mr->myBuffer);
-	free(mr);
+	//free(mr->myBuffer);
+	//free(mr);
 
 }
 
