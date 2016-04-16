@@ -69,8 +69,6 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 		struct map_args *args = (struct map_args*) malloc (sizeof(struct map_args));
 		struct map_args args_ins;
 
-		struct map_reduce mr_ins = mr;
-
 		args_ins.mr = mr;
 		args_ins.infd = open(inpath, O_RDONLY);
 		args_ins.nmaps = mr->n_threads;
