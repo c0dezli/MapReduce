@@ -58,8 +58,9 @@ static void *reduce_wrapper(void* arg) {
 }
 
 static int mr_printer(struct map_reduce *mr) {
-  if(mr->lock)
-    printf("lock is set\n");							// Create the lock
+
+  printf("lock is set\n");							// Create the lock
+
   if(mr->myBuffer != NULL)
     printf("Buffer is set\n");       						// Create the buffer
   if(mr->map != NULL)
