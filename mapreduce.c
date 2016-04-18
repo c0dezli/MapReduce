@@ -161,7 +161,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->myBuffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->myBuffer == NULL) {
       free(mr);
-      return NULL:
+      return NULL;
     }
     mr->map_args = malloc (sizeof(map_args));
     if(mr->map_args == NULL) {
