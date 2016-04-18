@@ -58,7 +58,7 @@ static void *reduce_wrapper(void* arg) {
 }
 
 static int mr_printer(struct map_reduce *mr) {
-  if(mr->lock != NULL)
+  if(mr->lock)
     printf("lock is set\n");							// Create the lock
   if(mr->myBuffer != NULL)
     printf("Buffer is set\n");       						// Create the buffer
@@ -66,14 +66,14 @@ static int mr_printer(struct map_reduce *mr) {
     printf("Map function pointer is set\n");										// Declear the function pointers
   if(mr->reduce != NULL)
     printf("Reduce function pointer is set\n");
-  if(mr->n_threads != NULL)
+  if(mr->n_threads != -1)
     printf("n_threads is set, value is %d\n", mr->n_threads);             				// Number of worker threads to use
-  if(mr->count != NULL)
+  if(mr->count != -1)
     printf("mr_count is set, value is %d\n", mr->count);// counts bytes in buffer
   if(mr->map_args != NULL)
-    printf("map_args is set\n", );
+    printf("map_args is set\n" );
   if(mr->reduce_args != NULL)
-    printf("reduce_args is set\n", );
+    printf("reduce_args is set\n" );
 
   return 0;
 }
