@@ -57,6 +57,26 @@ static void *reduce_wrapper(void* arg) {
  pthread_exit((void*) &ret);
 }
 
+static int mr_printer(struct map_reduce *mr) {
+  if(mr->lock != NULL)
+    printf("lock is set\n");							// Create the lock
+  if(mr->myBuffer != NULL)
+    printf("Buffer is set\n");       						// Create the buffer
+  if(mr->map != NULL)
+    printf("Map function pointer is set\n");										// Declear the function pointers
+  if(mr->reduce != NULL)
+    printf("Reduce function pointer is set\n");
+  if(mr->n_threads != NULL)
+    printf("n_threads is set, value is %d\n", mr->n_threads);             				// Number of worker threads to use
+  if(mr->count != NULL)
+    printf("mr_count is set, value is %d\n", mr->count);// counts bytes in buffer
+  if(mr->map_args != NULL)
+    printf("map_args is set\n", );
+  if(mr->reduce_args != NULL)
+    printf("reduce_args is set\n", );
+
+  return 0;
+}
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
@@ -72,6 +92,7 @@ static void *reduce_wrapper(void* arg) {
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
+  mr_printer(mr);
   // Create n threads for map function (n = n_threads)
 	for(int i=0; i<(mr->n_threads); i++) {
     // TODO: ?? mr->map_args = (void *) malloc (sizeof(map_args));
@@ -96,7 +117,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	args_ins.outfd = open(outpath, O_CREAT);    // w+ means if exists, overwrite, else create
 	args_ins.nmaps = mr->n_threads;
 
-	mr->reduce_args = &args_ins;					   // assign the instance to the pointer
+	mr->reduce_args = &args_ins;					      // assign the instance to the pointer
 	pthread_t c;
 	pthread_create(&c, NULL, reduce_wrapper, mr->reduce_args);
 	return 0;
@@ -126,6 +147,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr_ins.myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer
 		my_mr = &mr_ins;    									// Assign the instance to pointer
 
+    mr_printer(my_mr);
 		return my_mr;
 }
 
@@ -138,7 +160,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-
 	free(mr->myBuffer);
 	free(mr);
 
