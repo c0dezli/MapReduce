@@ -150,7 +150,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 //there is no way to free my_mr because it is a local variable.TODO  We need to make it into something that is passed around like *mr
 		struct map_reduce *mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
 
-    mr->_lock = PTHREAD_MUTEX_INITIALIZER;
+    mr->_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data

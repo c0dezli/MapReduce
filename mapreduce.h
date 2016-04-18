@@ -70,7 +70,7 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  * functions.
  */
 struct map_reduce {
-	pthread_mutex_t lock;							// Create the lock
+	pthread_mutex_t _lock;							// Create the lock
 
 	char * myBuffer;        						// Create the buffer
 
