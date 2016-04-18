@@ -67,7 +67,7 @@ static int mr_printer(struct map_reduce *mr) {
     printf("Map function pointer is set\n");										// Declear the function pointers
   if(mr->reduce != NULL)
     printf("Reduce function pointer is set\n");
-  
+
   printf("n_threads value is %d\n", mr->n_threads);             				// Number of worker threads to use
   printf("mr_count value is %d\n", mr->count);// counts bytes in buffer
 
@@ -139,14 +139,12 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 //there is no way to free my_mr because it is a local variable.TODO  We need to make it into something that is passed around like *mr
-		struct map_reduce *my_mr = (struct map_reduce*) malloc (sizeof(struct map_reduce)), //TODO ?
-		                   mr_ins;// The instance
+		struct map_reduce *my_mr = (struct map_reduce*) malloc (sizeof(struct map_reduce)); //TODO ?
 
-		mr_ins.map = map;// Save the function inside the sturcture
-		mr_ins.reduce = reduce;
-		mr_ins.n_threads = threads;// Save the static data
-		mr_ins.myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer
-		my_mr = &mr_ins;    									// Assign the instance to pointer
+		my_mr->map = map;// Save the function inside the sturcture
+		my_mr->reduce = reduce;
+		my_mr->n_threads = threads;// Save the static data
+		my_mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer    									// Assign the instance to pointer
 
     mr_printer(my_mr);
 		return my_mr;
