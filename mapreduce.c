@@ -74,7 +74,7 @@ int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   // Create n threads for map function (n = n_threads)
 	for(int i=0; i<(mr->n_threads); i++) {
-    mr->map_args = (void *) malloc (sizeof(map_args));
+    // TODO: ?? mr->map_args = (void *) malloc (sizeof(map_args));
   	map_args args_ins; // The instance
 
 		args_ins.mr = mr;
@@ -89,11 +89,11 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	}
 
   // Create a thread for reduce function
-  mr->reduce_args = (void *) malloc (sizeof(reduce_args));
+  // TODO: ??  mr->reduce_args = (void *) malloc (sizeof(reduce_args));
 	reduce_args args_ins; // The instance
 
 	args_ins.mr = mr;
-	args_ins.outfd = fopen(outpath, "w+");    // w+ means if exists, overwrite, else create
+	args_ins.outfd = open(outpath, O_CREAT);    // w+ means if exists, overwrite, else create
 	args_ins.nmaps = mr->n_threads;
 
 	mr->reduce_args = &args_ins;					   // assign the instance to the pointer

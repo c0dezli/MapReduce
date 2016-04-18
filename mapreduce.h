@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 /* Forward-declaration, the definition to edit is farther down */
 struct map_reduce;
