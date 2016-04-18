@@ -148,15 +148,35 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 //there is no way to free my_mr because it is a local variable.TODO  We need to make it into something that is passed around like *mr
-		struct map_reduce *mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
+  //http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+
+    struct map_reduce *mr = malloc (sizeof(struct map_reduce));
+    if(mr == NULL) return NULL;
 
     pthread_mutex_init(&mr->_lock, NULL);
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
-		mr->myBuffer = (char *) malloc (MR_BUFFER_SIZE); // Create buffer    									// Assign the instance to pointer
-    mr->map_args = (void *) malloc (sizeof(map_args));
-  	mr->reduce_args = (void *) malloc (sizeof(reduce_args));
+
+		mr->myBuffer = malloc (MR_BUFFER_SIZE); // Create buffer
+    if (mr->myBuffer == NULL) {
+      free(mr);
+      return NULL:
+    }
+    mr->map_args = malloc (sizeof(map_args));
+    if(mr->map_args == NULL) {
+      free(mr);
+      free(mr->myBuffer);
+      return NULL;
+    }
+  	mr->reduce_args = malloc (sizeof(reduce_args));
+    if(mr->reduce_args == NULL)
+    {
+      free(mr);
+      free(mr->myBuffer);
+      free(mr->map_args);
+      return NULL;
+    }
 
 		return mr;
 }
