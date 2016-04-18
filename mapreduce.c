@@ -93,9 +93,8 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	reduce_args args_ins; // The instance
 
 	args_ins.mr = mr;
-	args_ins.infd = fopen(outpath, "w+");    // w+ means if exists, overwrite, else create
+	args_ins.outfd = fopen(outpath, "w+");    // w+ means if exists, overwrite, else create
 	args_ins.nmaps = mr->n_threads;
-	args_ins.id = i;
 
 	mr->reduce_args = &args_ins;					   // assign the instance to the pointer
 	pthread_t c;
