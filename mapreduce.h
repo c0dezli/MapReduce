@@ -77,8 +77,8 @@ struct map_reduce {
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
 
-	int n_threads = -1;             				// Number of worker threads to use
-  int count = -1;                 				// counts bytes in buffer
+	int n_threads,             				// Number of worker threads to use
+   		count;                 				// counts bytes in buffer
 
 	void * map_args,
 			 * reduce_args;
