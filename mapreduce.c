@@ -11,7 +11,16 @@
  */
 
 /* Header includes */
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <fcntl.h>
 #include "mapreduce.h"
 
 /* Size of shared memory buffers */
@@ -139,9 +148,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
 //there is no way to free my_mr because it is a local variable.TODO  We need to make it into something that is passed around like *mr
-		struct map_reduce *mr = (struct map_reduce *) malloc (sizeof(struct map_reduce)); //TODO ?
+		struct map_reduce *mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
 
-    mr->lock = PTHREAD_MUTEX_INITIALIZER;
+    mr->_lock = PTHREAD_MUTEX_INITIALIZER;
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
@@ -149,7 +158,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     mr->map_args = (void *) malloc (sizeof(map_args));
   	mr->reduce_args = (void *) malloc (sizeof(reduce_args));
 
-		return my_mr;
+		return mr;
 }
 
 /**
