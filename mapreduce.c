@@ -40,30 +40,38 @@ typedef struct {							// The args for reduce function
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* arg) {
- map_args *args = (map_args *) arg;
+  if(arg->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The infd is %d, The nmaps is%d\n, The id is", infd, nmaps, id);
 
- struct map_reduce *mr = args->mr; // Get mr struct pointer
- int infd = args->infd,						 // Get arguments
-		 id = args->id,
-		 nmaps = args->nmaps;
+  map_args *args = (map_args *) arg;
 
- int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+  struct map_reduce *mr = args->mr; // Get mr struct pointer
+  int infd = args->infd,						 // Get arguments
+  	 id = args->id,
+  	 nmaps = args->nmaps;
 
- pthread_exit((void*) &ret);
+  int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+
+  pthread_exit((void*) &ret);
 }
 
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* arg) {
- reduce_args *args = (reduce_args *) arg;
+  if(arg->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The out fd is %d, The nmaps is%d\n", outfd, nmaps);
 
- struct map_reduce *mr = args->mr;   // Get mr struct pointer
- int outfd = args->outfd,						 // Get arguments
-		 nmaps = args->nmaps;
+  reduce_args *args = (reduce_args *) arg;
 
- int ret = mr->reduce(mr, outfd, nmaps); // call function TODO (HOW TO RETURN)
+  struct map_reduce *mr = args->mr;   // Get mr struct pointer
+  int outfd = args->outfd,						 // Get arguments
+  	 nmaps = args->nmaps;
 
- pthread_exit((void*) &ret);
+  int ret = mr->reduce(mr, outfd, nmaps); // call function TODO (HOW TO RETURN)
+
+  pthread_exit((void*) &ret);
 }
 
 static int mr_printer(struct map_reduce *mr) {
@@ -157,6 +165,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
+    mr->count = -1;
 
 		mr->myBuffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->myBuffer == NULL) {
@@ -165,16 +174,17 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     }
     mr->map_args = malloc (sizeof(map_args));
     if(mr->map_args == NULL) {
-      free(mr);
       free(mr->myBuffer);
+      free(mr);
+
       return NULL;
     }
   	mr->reduce_args = malloc (sizeof(reduce_args));
     if(mr->reduce_args == NULL)
     {
-      free(mr);
-      free(mr->myBuffer);
       free(mr->map_args);
+      free(mr->myBuffer);
+      free(mr);
       return NULL;
     }
 
@@ -190,9 +200,10 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-	free(mr->myBuffer);
-	free(mr);
-
+  free(mr->reduce_args);
+  free(mr->map_args);
+  free(mr->myBuffer);
+  free(mr);
 }
 
 /**
