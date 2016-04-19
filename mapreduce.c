@@ -117,7 +117,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		pthread_create(&(mr->map_threads + i)), NULL, map_wrapper, (void *)map_args));
+		pthread_create(&mr->map_threads[i]),  NULL, &map_wrapper, (void *)map_args));
 	}
 
   // Create a thread for reduce function
@@ -132,7 +132,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->outfd = mr->outfd;
   reduce_args->nmaps = mr->n_threads;
 
-	pthread_create(&(mr->reduce_thread), NULL, reduce_wrapper, (void *)reduce_args);
+	pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
 	return 0;
 }
 
@@ -161,7 +161,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->n_threads = threads;// Save the static data
     mr->count = -1;
 
-		mr->myBuffer = malloc (MR_BUFFER_SIZE); // Create buffer
+		mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->buffer == NULL) {
       free(mr);
       return NULL;
@@ -184,8 +184,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-  free(mr->reduce_args);
-  free(mr->map_args);
+  free(mr->args);
   free(mr->buffer);
   free(mr);
 }

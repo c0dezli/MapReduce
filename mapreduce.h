@@ -76,7 +76,7 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	struct kvpair * mr_buffer;        // Create the buffer
+	struct kvpair * buffer;        // Create the buffer
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
@@ -89,7 +89,7 @@ struct map_reduce {
 
 	FILE **iF, *oF;
 
-	arg_helper *args;
+	args_helper *args;
 
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes
