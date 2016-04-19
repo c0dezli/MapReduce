@@ -101,24 +101,24 @@ static void *reduce_wrapper(void* arg) {
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
-  struct args_helper **map_args,
-                      *reduce_args;//one reduce is needed. only one.
+  struct args_helper *map_args,
+                     *reduce_args;//one reduce is needed. only one.
 
-    map_args = malloc(mr->n_threads * sizeof(struct args_helper));
+  // map_args = malloc(mr->n_threads * sizeof(struct args_helper));
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
 
     mr->infd[i] = open(inpath, O_RDONLY);  // assign different fd to every map thread
     if (mr->infd[i]<0) return -1;
 
 //    map_args[i] = &(mr->args[i]);
-    map_args[i].mr = mr;
-    map_args[i].map = mr->map;
-    map_args[i].reduce = mr->reduce;
-    map_args[i].infd = mr->infd[i];
-    map_args[i].id = i;
-    map_args[i].nmaps = mr->n_threads;
+    map_args->mr = mr;
+    map_args->map = mr->map;
+    map_args->reduce = mr->reduce;
+    map_args->infd = mr->infd[i];
+    map_args->id = i;
+    map_args->nmaps = mr->n_threads;
 //added outfd?
-	pthread_create(&mr->map_threads[i], NULL, map_wrapper, (void *)map_args[i]);
+	pthread_create(&mr->map_threads[i], NULL, map_wrapper, (void *)map_args);
 	}
 
   // Create a thread for reduce function
@@ -127,12 +127,12 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   if (mr->outfd<0) return -1;
 
 //  reduce_args = &(mr->args[mr->n_threads]);
-  reduce_args.mr = mr;
-  reduce_args.reduce = mr->reduce;
-  reduce_args.map = mr->map;
-  reduce_args.outfd = mr->outfd;
+  reduce_args->mr = mr;
+  reduce_args->reduce = mr->reduce;
+  reduce_args->map = mr->map;
+  reduce_args->outfd = mr->outfd;
 
-  reduce_args.nmaps = mr->n_threads;
+  reduce_args->nmaps = mr->n_threads;
 
 	pthread_create(&mr->reduce_thread, NULL, reduce_wrapper, (void *)reduce_args);
 	return 0;
@@ -162,32 +162,19 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
-
-
-    mr->count = -1;         // give meaningless init value
-    mr->outfd = -1;
+    mr->count = -1;
 
 		mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->buffer == NULL) {
       free(mr);
       return NULL;
     }
-
     mr->args = malloc (sizeof(struct args_helper));
     if(mr->args == NULL) {
       free(mr->buffer);
       free(mr);
       return NULL;
     }
-
-    mr->infd = calloc (threads, sizeof(int));
-    if(mr->infd == NULL) {
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    }
-
 		return mr;
 }
 
@@ -200,7 +187,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-  free(mr->infd);
   free(mr->args);
   free(mr->buffer);
   free(mr);
