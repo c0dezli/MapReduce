@@ -56,11 +56,11 @@ static int mr_printer(struct map_reduce *mr) {
 static void *map_wrapper(void* arg) {
   struct args_helper *map_args = (struct args_helper *) arg;
 
-  if(map_args->mr != NULL) {
-    printf("The arg->mr is set\n");
-    mr_printer(map_args->mr);
-  }
-  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", map_args->infd, map_args->nmaps, map_args->id);
+  // if(map_args->mr != NULL) {
+  //   printf("The arg->mr is set\n");
+  //   mr_printer(map_args->mr);
+  // }
+  // printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", map_args->infd, map_args->nmaps, map_args->id);
 
   map_args->mr->map_failed[map_args->id] = map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
 
@@ -73,11 +73,11 @@ static void *map_wrapper(void* arg) {
 static void *reduce_wrapper(void* arg) {
   struct args_helper *reduce_args = (struct args_helper *) arg;
 
-  if(reduce_args->mr != NULL) {
-    printf("The arg->mr is set\n");
-    mr_printer(reduce_args->mr);
-  }
-  printf(" The out fd is %d, The nmaps is %d\n\n\n\n", reduce_args->outfd, reduce_args->nmaps);
+  // if(reduce_args->mr != NULL) {
+  //   printf("The arg->mr is set\n");
+  //   mr_printer(reduce_args->mr);
+  // }
+  // printf(" The out fd is %d, The nmaps is %d\n\n\n\n", reduce_args->outfd, reduce_args->nmaps);
 
   reduce_args->mr->reduce_failed = reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
@@ -236,7 +236,7 @@ int
 mr_finish(struct map_reduce *mr)
 {
   for(int i=0; i<mr->n_threads; i++) {
-    if (pthread_join(mr->map_threads[i],NULL) != 0)
+    if (pthread_join(mr->map_threads[i], NULL) != 0)
       return -1;  // failed
   }
   if(pthread_join(mr->reduce_thread, NULL) != 0)
