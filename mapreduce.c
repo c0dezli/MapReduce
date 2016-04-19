@@ -107,7 +107,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
 
     mr->infd[i] = open(inpath, O_RDONLY);  // assign different fd to every map thread
-    if (mr->infd[i]<0) return -1;
+    if (mr->infd[i] < 0) return -1;
 
     map_args = &(mr->args[i]);
     map_args->mr = mr;
@@ -175,7 +175,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
-    mr->infd = calloc (threads, sizeof(int));
+    mr->infd = malloc (sizeof(int) * threads);
     if(mr->infd == NULL) {
       free(mr->args);
       free(mr->buffer);
@@ -235,13 +235,16 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
-  for(int i=0; i<mr->n_threads; i++) {
-
-    if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1)
+  for(int i=0; i<(mr->n_threads); i++) {
+    if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1) {
+      printf("map_thread %d exited\n", i);
       return -1;  // failed
+    }
   }
-  if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1)
+  if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1){
+    printf("reduce_thread\n", i);
     return -1;  // failed
+  }
 
   //check array
   //check pthread join
