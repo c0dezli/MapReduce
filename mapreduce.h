@@ -89,7 +89,7 @@ struct map_reduce {
 
 	FILE **iF, *oF;
 
-	args_helper *args;
+	struct args_helper *args;
 
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes
