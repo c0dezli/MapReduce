@@ -101,8 +101,8 @@ static void *reduce_wrapper(void* arg) {
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
-  struct args_helper *map_args,
-                     *reduce_args;//one reduce is needed. only one.
+  struct args_helper *map_args = malloc(sizeof(struct args_helper)),
+                     *reduce_args = malloc(sizeof(struct args_helper));//one reduce is needed. only one.
 
   // map_args = malloc(mr->n_threads * sizeof(struct args_helper));
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
@@ -118,9 +118,8 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 //added outfd?
-	pthread_create(&mr->map_threads[i], NULL, map_wrapper, (void *)map_args);
+	  pthread_create(&mr->map_threads[i], NULL, map_wrapper, (void *)map_args);
 	}
-
   // Create a thread for reduce function
 
   mr->outfd = open(outpath, O_CREAT);
@@ -135,6 +134,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->nmaps = mr->n_threads;
 
 	pthread_create(&mr->reduce_thread, NULL, reduce_wrapper, (void *)reduce_args);
+  
+  free(map_args);
+  free(reduce_args);
 	return 0;
 }
 
