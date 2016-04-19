@@ -37,51 +37,6 @@ typedef struct {							// The args for reduce function
   int nmaps;
 }reduce_args;
 
-/*	Helper function that can be passed to the pthread_create to call the map_fn
- */
-static void *map_wrapper(void* arg) {
-  map_args *args = (map_args *) arg;
-
-  if(args->mr != NULL)
-    printf("The arg->mr is set\n");
-  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
-
-  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if (mr == NULL)  return -1;
-  mr = args->mr;
-
-  mr_printer(mr);
-
-  int ret = mr->map(mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
-
-  free(mr);
-  pthread_exit((void*) &ret);
-}
-
-/*	Helper function that can be passed to the pthread_create to call the reduce_fn
- */
-static void *reduce_wrapper(void* arg) {
-  reduce_args *args = (reduce_args *) arg;
-
-  if(args->mr != NULL)
-    printf("The arg->mr is set\n");
-  printf(" The out fd is %d, The nmaps is %d\n\n\n\n", args->outfd, args->nmaps);
-
-
-  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if(mr == NULL) return -1;
-  mr = args->mr;   // Get mr struct pointer
-
-
-  int outfd = args->outfd,						 // Get arguments
-  	 nmaps = args->nmaps;
-
-  int ret = mr->reduce(mr, outfd, nmaps); // call function
-
-  free(mr);
-  pthread_exit((void*) &ret);
-}
-
 static int mr_printer(struct map_reduce *mr) {
 
   //printf("lock is set\n");							// Create the lock
@@ -103,6 +58,52 @@ static int mr_printer(struct map_reduce *mr) {
 
   return 0;
 }
+
+/*	Helper function that can be passed to the pthread_create to call the map_fn
+ */
+static void *map_wrapper(void* arg) {
+  map_args *args = (map_args *) arg;
+
+  if(args->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
+
+  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
+  if (mr == NULL)  return;
+  mr = args->mr;
+
+  mr_printer(mr);
+
+  int ret = mr->map(mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
+
+  free(mr);
+  pthread_exit((void*) &ret);
+}
+
+/*	Helper function that can be passed to the pthread_create to call the reduce_fn
+ */
+static void *reduce_wrapper(void* arg) {
+  reduce_args *args = (reduce_args *) arg;
+
+  if(args->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The out fd is %d, The nmaps is %d\n\n\n\n", args->outfd, args->nmaps);
+
+
+  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
+  if(mr == NULL) return;
+  mr = args->mr;   // Get mr struct pointer
+
+
+  int outfd = args->outfd,						 // Get arguments
+  	 nmaps = args->nmaps;
+
+  int ret = mr->reduce(mr, outfd, nmaps); // call function
+
+  free(mr);
+  pthread_exit((void*) &ret);
+}
+
 /**
  * Begins a multithreaded MapReduce operation.  This operation will process data
  * from the given input file and write the result to the given output file.
