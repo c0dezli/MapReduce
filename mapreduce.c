@@ -40,11 +40,11 @@ typedef struct {							// The args for reduce function
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* arg) {
-  if(arg->mr != NULL)
-    printf("The arg->mr is set\n");
-  printf(" The infd is %d, The nmaps is%d\n, The id is", infd, nmaps, id);
-
   map_args *args = (map_args *) arg;
+
+  if(args->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The infd is %d, The nmaps is%d\n, The id is", args->infd, args->nmaps, args->id);
 
   struct map_reduce *mr = args->mr; // Get mr struct pointer
   int infd = args->infd,						 // Get arguments
@@ -59,11 +59,12 @@ static void *map_wrapper(void* arg) {
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* arg) {
-  if(arg->mr != NULL)
-    printf("The arg->mr is set\n");
-  printf(" The out fd is %d, The nmaps is%d\n", outfd, nmaps);
-
   reduce_args *args = (reduce_args *) arg;
+
+  if(args->mr != NULL)
+    printf("The arg->mr is set\n");
+  printf(" The out fd is %d, The nmaps is%d\n", args->outfd, args->nmaps);
+
 
   struct map_reduce *mr = args->mr;   // Get mr struct pointer
   int outfd = args->outfd,						 // Get arguments
