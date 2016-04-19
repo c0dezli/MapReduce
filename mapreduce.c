@@ -236,10 +236,11 @@ int
 mr_finish(struct map_reduce *mr)
 {
   for(int i=0; i<mr->n_threads; i++) {
-    if (pthread_join(mr->map_threads[i], NULL) != 0)
+
+    if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1)
       return -1;  // failed
   }
-  if(pthread_join(mr->reduce_thread, NULL) != 0)
+  if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1)
     return -1;  // failed
 
   //check array
