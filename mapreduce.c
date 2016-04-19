@@ -117,7 +117,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args));
+		pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
 	}
 
   // Create a thread for reduce function
