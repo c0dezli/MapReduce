@@ -46,13 +46,15 @@ static void *map_wrapper(void* arg) {
     printf("The arg->mr is set\n");
   printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
 
-  struct map_reduce *mr = args->mr; // Get mr struct pointer
-  // int infd = args->infd,						 // Get arguments
-  // 	 id = args->id,
-  // 	 nmaps = args->nmaps;
+  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
+  if (mr == NULL)  return -1;
+  mr = args->mr;
 
-  int ret = mr->map(args->mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
+  mr_printer(mr);
 
+  int ret = mr->map(mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
+
+  free(mr);
   pthread_exit((void*) &ret);
 }
 
@@ -66,18 +68,23 @@ static void *reduce_wrapper(void* arg) {
   printf(" The out fd is %d, The nmaps is %d\n\n\n\n", args->outfd, args->nmaps);
 
 
-  struct map_reduce *mr = args->mr;   // Get mr struct pointer
+  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
+  if(mr == NULL) return -1;
+  mr = args->mr;   // Get mr struct pointer
+
+
   int outfd = args->outfd,						 // Get arguments
   	 nmaps = args->nmaps;
 
-  int ret = mr->reduce(mr, outfd, nmaps); // call function TODO (HOW TO RETURN)
+  int ret = mr->reduce(mr, outfd, nmaps); // call function
 
+  free(mr);
   pthread_exit((void*) &ret);
 }
 
 static int mr_printer(struct map_reduce *mr) {
 
-  printf("lock is set\n");							// Create the lock
+  //printf("lock is set\n");							// Create the lock
 
   if(mr->myBuffer != NULL)
     printf("Buffer is set\n");       						// Create the buffer
@@ -143,7 +150,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	args_ins.nmaps = mr->n_threads;
 
 	mr->reduce_args = &args_ins;					      // assign the instance to the pointer
-  
+
 	pthread_t c;
 	pthread_create(&c, NULL, reduce_wrapper, mr->reduce_args);
 	return 0;
