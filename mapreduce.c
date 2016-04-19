@@ -35,7 +35,7 @@ typedef struct {									// The args for map function
 
 static int mr_printer(struct map_reduce *mr) {
 
-  if(mr->myBuffer != NULL)
+  if(mr->buffer != NULL)
     printf("Buffer is set\n");       						// Create the buffer
   if(mr->map != NULL)
     printf("Map function pointer is set\n");										// Declear the function pointers
@@ -45,10 +45,8 @@ static int mr_printer(struct map_reduce *mr) {
   printf("n_threads value is %d\n", mr->n_threads);             				// Number of worker threads to use
   printf("count value is %d\n", mr->count);// counts bytes in buffer
 
-  if(mr->map_args != NULL)
-    printf("map_args is set\n" );
-  if(mr->reduce_args != NULL)
-    printf("reduce_args is set\n\n\n\n" );
+  if(mr->args != NULL)
+    printf("args is set\n\n\n\n" );
 
   return 0;
 }
@@ -81,7 +79,7 @@ static void *reduce_wrapper(void* arg) {
   }
   printf(" The out fd is %d, The nmaps is %d\n\n\n\n", reduce_args->outfd, reduce_args->nmaps);
 
-  reduce_args->mr->reduce_failed = reduce_args->map(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
+  reduce_args->mr->reduce_failed = reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
   pthread_exit((void*) &reduce_args->mr->reduce_failed);
   //return (void *)reduce_args;
@@ -103,7 +101,7 @@ static void *reduce_wrapper(void* arg) {
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
-  arg_helper *map_args,
+  args_helper *map_args,
              *reduce_args;
 
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
@@ -119,7 +117,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		pthread_create((mr->map_threads + i)), NULL, map_wrapper, (void *)map_args));
+		pthread_create(&(mr->map_threads + i)), NULL, map_wrapper, (void *)map_args));
 	}
 
   // Create a thread for reduce function
@@ -134,7 +132,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->outfd = mr->outfd;
   reduce_args->nmaps = mr->n_threads;
 
-	pthread_create((mr->reduce_thread), NULL, reduce_wrapper, (void *)reduce_args);
+	pthread_create(&(mr->reduce_thread), NULL, reduce_wrapper, (void *)reduce_args);
 	return 0;
 }
 
@@ -164,25 +162,16 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     mr->count = -1;
 
 		mr->myBuffer = malloc (MR_BUFFER_SIZE); // Create buffer
-    if (mr->myBuffer == NULL) {
+    if (mr->buffer == NULL) {
       free(mr);
       return NULL;
     }
-    mr->map_args = malloc (sizeof(map_args));
-    if(mr->map_args == NULL) {
-      free(mr->myBuffer);
+    mr->args = malloc (sizeof(args_helper));
+    if(mr->args == NULL) {
+      free(mr->buffer);
       free(mr);
       return NULL;
     }
-  	mr->reduce_args = malloc (sizeof(reduce_args));
-    if(mr->reduce_args == NULL)
-    {
-      free(mr->map_args);
-      free(mr->myBuffer);
-      free(mr);
-      return NULL;
-    }
-
 		return mr;
 }
 
@@ -197,7 +186,7 @@ void
 mr_destroy(struct map_reduce *mr) {
   free(mr->reduce_args);
   free(mr->map_args);
-  free(mr->myBuffer);
+  free(mr->buffer);
   free(mr);
 }
 
