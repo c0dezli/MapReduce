@@ -44,7 +44,7 @@ static void *map_wrapper(void* arg) {
 
   if(args->mr != NULL)
     printf("The arg->mr is set\n");
-  printf(" The infd is %d, The nmaps is%d\n, The id is", args->infd, args->nmaps, args->id);
+  printf(" The infd is %d, The nmaps is %d\n, The id is %d", args->infd, args->nmaps, args->id);
 
   struct map_reduce *mr = args->mr; // Get mr struct pointer
   int infd = args->infd,						 // Get arguments
@@ -63,7 +63,7 @@ static void *reduce_wrapper(void* arg) {
 
   if(args->mr != NULL)
     printf("The arg->mr is set\n");
-  printf(" The out fd is %d, The nmaps is%d\n", args->outfd, args->nmaps);
+  printf(" The out fd is %d, The nmaps is %d\n", args->outfd, args->nmaps);
 
 
   struct map_reduce *mr = args->mr;   // Get mr struct pointer
