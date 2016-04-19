@@ -168,7 +168,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       free(mr);
       return NULL;
     }
-    mr->args = malloc (sizeof(struct args_helper));
+    mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
     if(mr->args == NULL) {
       free(mr->buffer);
       free(mr);
