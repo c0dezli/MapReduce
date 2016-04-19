@@ -69,7 +69,7 @@ static void *map_wrapper(void* arg) {
   printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
 
   struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if (mr == NULL)  return;
+  if (mr == NULL)  return NULL;
   mr = args->mr;
 
   mr_printer(mr);
@@ -91,7 +91,7 @@ static void *reduce_wrapper(void* arg) {
 
 
   struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if(mr == NULL) return;
+  if(mr == NULL) return NULL;
   mr = args->mr;   // Get mr struct pointer
 
 
