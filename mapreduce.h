@@ -25,7 +25,6 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <fcntl.h>
-#include "mapreduce.c"
 
 /* Forward-declaration, the definition to edit is farther down */
 struct map_reduce;
@@ -90,7 +89,7 @@ struct map_reduce {
 
 	FILE **iF, *oF;
 
-	args_helper *args;
+	void *args;
 
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes
