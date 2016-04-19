@@ -44,14 +44,14 @@ static void *map_wrapper(void* arg) {
 
   if(args->mr != NULL)
     printf("The arg->mr is set\n");
-  printf(" The infd is %d, The nmaps is %d\n, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
+  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
 
   struct map_reduce *mr = args->mr; // Get mr struct pointer
-  int infd = args->infd,						 // Get arguments
-  	 id = args->id,
-  	 nmaps = args->nmaps;
+  // int infd = args->infd,						 // Get arguments
+  // 	 id = args->id,
+  // 	 nmaps = args->nmaps;
 
-  int ret = mr->map(mr, infd, id, nmaps); // call function (HOW TO RETURN?????)
+  int ret = mr->map(args->mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
 
   pthread_exit((void*) &ret);
 }
@@ -92,7 +92,7 @@ static int mr_printer(struct map_reduce *mr) {
   if(mr->map_args != NULL)
     printf("map_args is set\n" );
   if(mr->reduce_args != NULL)
-    printf("reduce_args is set\n" );
+    printf("reduce_args is set\n\n\n\n" );
 
   return 0;
 }
@@ -117,7 +117,10 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     // TODO: ?? mr->map_args = (void *) malloc (sizeof(map_args));
   	map_args args_ins; // The instance
 
-		args_ins.mr = mr;
+		args_ins.mr = malloc (sizeof(struct map_reduce));
+    if(args_ins.mr == NULL) return -1;
+    args_ins.mr = mr;
+
 		args_ins.infd = open(inpath, O_RDONLY);
 		args_ins.nmaps = mr->n_threads;
 		args_ins.id = i;
@@ -132,11 +135,15 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   // TODO: ??  mr->reduce_args = (void *) malloc (sizeof(reduce_args));
 	reduce_args args_ins; // The instance
 
-	args_ins.mr = mr;
+	args_ins.mr = malloc (sizeof(struct map_reduce));
+  if(args_ins.mr == NULL) return -1;
+  args_ins.mr = mr;
+
 	args_ins.outfd = open(outpath, O_CREAT);    // w+ means if exists, overwrite, else create
 	args_ins.nmaps = mr->n_threads;
 
 	mr->reduce_args = &args_ins;					      // assign the instance to the pointer
+  
 	pthread_t c;
 	pthread_create(&c, NULL, reduce_wrapper, mr->reduce_args);
 	return 0;
