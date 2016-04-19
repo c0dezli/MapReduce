@@ -101,8 +101,8 @@ static void *reduce_wrapper(void* arg) {
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
-  struct args_helper *map_args,
-             reduce_args;//one reduce is needed. only one.
+  struct args_helper **map_args,
+                      *reduce_args;//one reduce is needed. only one.
 
     map_args = malloc(mr->n_threads * sizeof(struct args_helper));
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
