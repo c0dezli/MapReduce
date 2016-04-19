@@ -235,10 +235,16 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
-//check array
-//check pthread join
-	return 0; // if every M&R callback returned 0
-	// TODO: else return -1
+  for(int i=0; i<mr->n_threads; i++) {
+    if (pthread_join(mr->map_threads[i],NULL) != 0)
+      return -1;  // failed
+  }
+  if(pthread_join(mr->reduce_thread, NULL) != 0)
+    return -1;  // failed
+
+  //check array
+  //check pthread join
+  return 0; // if every M&R callback returned 0
 }
 
 /**
