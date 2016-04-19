@@ -243,7 +243,7 @@ mr_finish(struct map_reduce *mr)
     }
   }
   if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1){
-    printf("reduce_thread\n", i);
+    printf("reduce_thread\n");
     return -1;  // failed
   }
 
@@ -287,7 +287,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
  * mr  Pointer to the MapReduce instance
  * id  Identifier of Map thread from which to consume
  * kv  Pointer to the key-value pair that was produced by Map.  The caller is
- *     responsible for allocating memory for the key and value ahead of time and
+ *     responsible for allocating memory for the key and value a of time and
  *     setting the pointer and size fields for each to the location and size of
  *     the allocated buffer.
  *
