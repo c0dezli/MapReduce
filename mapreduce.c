@@ -183,6 +183,25 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
+    mr->map_threads = malloc(sizeof(pthread_t) * threads);
+    if(mr->infd == NULL) {
+      free(mr->infd);
+      free(mr->args);
+      free(mr->buffer);
+      free(mr);
+      return NULL;
+    }
+
+    mr->map_failed = malloc(sizeof(int) * threads);
+    if(mr->infd == NULL) {
+      free(mr->map_threads);
+      free(mr->infd);
+      free(mr->args);
+      free(mr->buffer);
+      free(mr);
+      return NULL;
+    }
+
 		return mr;
 }
 
@@ -195,6 +214,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
+  free(mr->map_failed);
+  free(mr->map_threads);
   free(mr->infd);
   free(mr->args);
   free(mr->buffer);
