@@ -235,7 +235,7 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
-  if(mr == NULL && mr->map_threads != NULL && mr->infd != NULL && mr->reduce_thread != NULL) { // out of memory
+  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) { // out of memory
     for(int i=0; i<(mr->n_threads); i++) {
         if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1 || mr->map_failed[i] !=0)
           return -1;  // failed
@@ -245,10 +245,12 @@ mr_finish(struct map_reduce *mr)
       printf("reduce_thread\n");
       return -1;  // failed
     }
+    
+    return 0;
   } else return -1;
   //check array
   //check pthread join
-  return 0; // if every M&R callback returned 0
+   // if every M&R callback returned 0
 }
 
 /**
