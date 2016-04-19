@@ -70,18 +70,26 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  * functions.
  */
 struct map_reduce {
-	pthread_mutex_t _lock;							// Create the lock
+	pthread_mutex_t _lock;						// Create the lock
+	pthread_t *map_threads,
+						 reduce_thread;
+	pthread_cond_t *not_full,
+								 *not_empty;
 
-	char * myBuffer;        						// Create the buffer
+	struct kvpair * mr_buffer;        // Create the buffer
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
 
 	int n_threads,             				// Number of worker threads to use
-   		count;                 				// counts bytes in buffer
+   		count,                 				// counts bytes in buffer
+			*infd, *outfd									// File discripter
+			*map_failed,
+			reduce_failed;
 
-	void * map_args,
-			 * reduce_args;
+	FILE **iF, *oF;
+
+	arg_helper *args;
 
 //2 index for each thread. one for where consume. one for where produce.
 //know how many are free. 1023-used bytes

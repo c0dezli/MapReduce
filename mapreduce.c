@@ -28,18 +28,12 @@
 
 typedef struct {									// The args for map function
  struct map_reduce *mr;
- int infd, nmaps, id;
-}map_args;
-
-typedef struct {							// The args for reduce function
-  struct map_reduce *mr;
-  int outfd;
-  int nmaps;
-}reduce_args;
+ int infd, outfd, nmaps, id;
+ map_fn map;
+ reduce_fn reduce;
+}args_helper;
 
 static int mr_printer(struct map_reduce *mr) {
-
-  //printf("lock is set\n");							// Create the lock
 
   if(mr->myBuffer != NULL)
     printf("Buffer is set\n");       						// Create the buffer
@@ -62,46 +56,35 @@ static int mr_printer(struct map_reduce *mr) {
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* arg) {
-  map_args *args = (map_args *) arg;
+  args_helper *map_args = (args_helper *) arg;
 
-  if(args->mr != NULL)
+  if(map_args->mr != NULL) {
     printf("The arg->mr is set\n");
-  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", args->infd, args->nmaps, args->id);
+    mr_printer(map_args->mr);
+  }
+  printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", map_args->infd, map_args->nmaps, map_args->id);
 
-  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if (mr == NULL)  return NULL;
-  mr = args->mr;
+  map_args->mr->map_failed[map_args->id] = map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
 
-  mr_printer(mr);
-
-  int ret = mr->map(mr, args->infd, args->id, args->nmaps); // call function (HOW TO RETURN?????)
-
-  free(mr);
-  pthread_exit((void*) &ret);
+  pthread_exit((void*) &map_args->mr->map_failed[map_args->id]);
+  //return (void *)map_args;
 }
 
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* arg) {
-  reduce_args *args = (reduce_args *) arg;
+  args_helper *reduce_args = (args_helper *) arg;
 
-  if(args->mr != NULL)
+  if(reduce_args->mr != NULL) {
     printf("The arg->mr is set\n");
-  printf(" The out fd is %d, The nmaps is %d\n\n\n\n", args->outfd, args->nmaps);
+    mr_printer(reduce_args->mr);
+  }
+  printf(" The out fd is %d, The nmaps is %d\n\n\n\n", reduce_args->outfd, reduce_args->nmaps);
 
+  reduce_args->mr->reduce_failed = reduce_args->map(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
-  struct map_reduce *mr = malloc(sizeof(struct map_reduce));
-  if(mr == NULL) return NULL;
-  mr = args->mr;   // Get mr struct pointer
-
-
-  int outfd = args->outfd,						 // Get arguments
-  	 nmaps = args->nmaps;
-
-  int ret = mr->reduce(mr, outfd, nmaps); // call function
-
-  free(mr);
-  pthread_exit((void*) &ret);
+  pthread_exit((void*) &reduce_args->mr->reduce_failed);
+  //return (void *)reduce_args;
 }
 
 /**
@@ -119,41 +102,39 @@ static void *reduce_wrapper(void* arg) {
  */
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-  mr_printer(mr);
-  // Create n threads for map function (n = n_threads)
-	for(int i=0; i<(mr->n_threads); i++) {
-    // TODO: ?? mr->map_args = (void *) malloc (sizeof(map_args));
-  	map_args args_ins; // The instance
 
-		args_ins.mr = malloc (sizeof(struct map_reduce));
-    if(args_ins.mr == NULL) return -1;
-    args_ins.mr = mr;
+  arg_helper *map_args,
+             *reduce_args;
 
-		args_ins.infd = open(inpath, O_RDONLY);
-		args_ins.nmaps = mr->n_threads;
-		args_ins.id = i;
+	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
 
-		mr->map_args = &args_ins;					// assign the instance to the pointer
+    mr->infd[i] = open(inpath, O_RDONLY);  // assign different fd to every map thread
+    if (mr->infd[i]<0) return -1;
 
-		pthread_t c;
-		pthread_create(&c, NULL, map_wrapper, mr->map_args);
+    map_args = &(mr->args[i]);
+    map_args->mr = mr;
+    map_args->map = mr->map;
+    map_args->reduce = mr->reduce;
+    map_args->infd = mr->infd[i];
+    map_args->id = i;
+    map_args->nmaps = mr->n_threads;
+
+		pthread_create((mr->map_threads + i)), NULL, map_wrapper, (void *)map_args));
 	}
 
   // Create a thread for reduce function
-  // TODO: ??  mr->reduce_args = (void *) malloc (sizeof(reduce_args));
-	reduce_args args_ins; // The instance
 
-	args_ins.mr = malloc (sizeof(struct map_reduce));
-  if(args_ins.mr == NULL) return -1;
-  args_ins.mr = mr;
+  mr->outfd = open(outpath, O_CREAT);
+  if (mr->outfd<0) return -1;
 
-	args_ins.outfd = open(outpath, O_CREAT);    // w+ means if exists, overwrite, else create
-	args_ins.nmaps = mr->n_threads;
+  reduce_args = &(mr->args[mr->n_threads]);
+  reduce_args->mr = mr;
+  reduce_args->reduce = mr->reduce;
+  reduce_args->map = mr->map;
+  reduce_args->outfd = mr->outfd;
+  reduce_args->nmaps = mr->n_threads;
 
-	mr->reduce_args = &args_ins;					      // assign the instance to the pointer
-
-	pthread_t c;
-	pthread_create(&c, NULL, reduce_wrapper, mr->reduce_args);
+	pthread_create((mr->reduce_thread), NULL, reduce_wrapper, (void *)reduce_args);
 	return 0;
 }
 
@@ -171,8 +152,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
  */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-//there is no way to free my_mr because it is a local variable.TODO  We need to make it into something that is passed around like *mr
-  //http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+    // http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
 
     struct map_reduce *mr = malloc (sizeof(struct map_reduce));
     if(mr == NULL) return NULL;
@@ -192,7 +172,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     if(mr->map_args == NULL) {
       free(mr->myBuffer);
       free(mr);
-
       return NULL;
     }
   	mr->reduce_args = malloc (sizeof(reduce_args));
