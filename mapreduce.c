@@ -290,7 +290,7 @@ mr_finish(struct map_reduce *mr)
 
     if(close(mr->outfd) == -1 || mr->reducefn_failed != 0)
       return -1;  // failed
-    if(mr->reduce_thread_failed != 0 || pthread_join(mr->reducefn_thread, NULL) != 0)
+    if(mr->reduce_thread_failed != 0 || pthread_join(mr->reduce_thread, NULL) != 0)
       return -1;
 
     return 0; //success
