@@ -229,11 +229,6 @@ mr_destroy(struct map_reduce *mr) {
  */
 int
 mr_finish(struct map_reduce *mr) {
-    // close fd
-    for(int i=0; i<(mr->n_threads); i++)
-      mr->infd_failed[i] = close(mr->infd[i]);
-
-    mr->outfd_failed = close(mr->outfd);
 
     // close threads
     for(int i=0; i<(mr->n_threads); i++)
@@ -242,6 +237,13 @@ mr_finish(struct map_reduce *mr) {
 
     if(mr->reduce_thread_failed == 0) // success
       pthread_join(mr->reduce_thread, NULL);
+
+    // close fd
+    for(int i=0; i<(mr->n_threads); i++)
+      mr->infd_failed[i] = close(mr->infd[i]);
+
+    mr->outfd_failed = close(mr->outfd);
+
 
     // check if success
     if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
