@@ -26,6 +26,8 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
+typedef enum { false, true } bool;
+
 struct args_helper{									// The args for map function
  struct map_reduce *mr;
  int infd, outfd, nmaps, id;
@@ -274,7 +276,7 @@ mr_finish(struct map_reduce *mr)
       if(thread_create_success)   // thread must exists before we close it
         thread_close_success = (pthread_join(mr->map_threads[i], NULL) == 0); // pthread_join returns 0 when success
       }
-      
+
       if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
         return -1;
   }
