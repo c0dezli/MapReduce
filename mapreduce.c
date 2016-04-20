@@ -245,7 +245,7 @@ mr_finish(struct map_reduce *mr)
       s2 = mr->reduce_failed;
 
   if(s1 || s2) return -1;            // check seperately to aviod sege fault
-  else if(pthread_join(mr->reduce_threads, NULL) != 0) return -1;
+  else if(pthread_join(mr->reduce_thread, NULL) != 0) return -1;
 
   return 0; // success
   //check array
