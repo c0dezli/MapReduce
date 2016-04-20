@@ -238,6 +238,13 @@ mr_finish(struct map_reduce *mr)
   int *infd_failed = malloc (sizeof(int) * mr->n_threads),
       outfd_failed = -1;
 
+  while (infd_failed == NULL)
+    infd_failed = malloc (sizeof(int) * mr->n_threads);
+    
+  if(infd_failed != NULL)
+    for(int i; i<mr->n_threads; i++)
+      infd_failed[i] = -1;
+
   // for infd
   for(int i=0; i<(mr->n_threads); i++)
     infd_failed[i] = close(mr->infd[i]);
@@ -257,7 +264,7 @@ mr_finish(struct map_reduce *mr)
     free(infd_failed);
     return -1;  // failed
   }
-  
+
   free(infd_failed);
   return 0;
   //check array
