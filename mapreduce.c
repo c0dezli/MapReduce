@@ -37,7 +37,7 @@ struct args_helper{									// The args for map function
  */
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
-  print("infd %d, id %d, nmaps %d \n\n\n",args->infd, args->id, args->nmaps);
+  printf("infd %d, id %d, nmaps %d \n\n\n",args->infd, args->id, args->nmaps);
   args->mr->mapfn_failed[map_args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
 
   pthread_exit((void*) &args->mr->mapfn_failed[map_args->id]);
@@ -48,7 +48,7 @@ static void *map_wrapper(void* map_args) {
  */
 static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
-  print("outfd %d, nmaps %d \n\n\n",args->outfd, args->nmaps);
+  printf("outfd %d, nmaps %d \n\n\n",args->outfd, args->nmaps);
 
   args->mr->reducefn_failed = args->reduce(args->mr, args->outfd, args->nmaps);
 
