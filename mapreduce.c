@@ -26,8 +26,6 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
-typedef enum { false, true } bool;
-
 struct args_helper{									// The args for map function
  struct map_reduce *mr;
  int infd, outfd, nmaps, id;
