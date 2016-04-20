@@ -246,14 +246,19 @@ mr_finish(struct map_reduce *mr)
 
   // Checking map success
   for(int i=0; i<(mr->n_threads); i++) {
-      if (mr->map_failed[i] != 0 || infd_failed[i] == -1 || pthread_join(mr->map_threads[i], NULL) != 0)
+      if (mr->map_failed[i] != 0 || infd_failed[i] == -1 || pthread_join(mr->map_threads[i], NULL) != 0){
+        free(infd_failed);
         return -1;  // failed
+      }
   }
 
   // Checking reduce success
-  if(mr->reduce_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0)
+  if(mr->reduce_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
+    free(infd_failed);
     return -1;  // failed
-
+  }
+  
+  free(infd_failed);
   return 0;
   //check array
   //check pthread join
