@@ -152,6 +152,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     mr->count = -1;         // give meaningless init value
     mr->outfd = -1;
     mr->reducefn_failed = -1;
+    mr->reduce_thread_failed = -1;
+    mr->outfd_failed = -1;
 
     mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->buffer == NULL) {
@@ -174,7 +176,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     }
 
     mr->map_threads = malloc(sizeof(pthread_t) * threads);
-    if(mr->infd == NULL) {
+    if(mr->map_threads == NULL) {
       free(mr->infd);
       free(mr->args);
       free(mr->buffer);
@@ -183,7 +185,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     }
 
     mr->mapfn_failed = malloc(sizeof(int) * threads);
-    if(mr->infd == NULL) {
+    if(mr->mapfn_failed == NULL) {
       free(mr->map_threads);
       free(mr->infd);
       free(mr->args);
@@ -196,7 +198,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     }
 
     mr->map_thread_failed = malloc(sizeof(int) * threads);
-    if(mr->infd == NULL) {
+    if(mr->map_thread_failed == NULL) {
       free(mr->mapfn_failed);
       free(mr->map_threads);
       free(mr->infd);
@@ -207,6 +209,21 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
     } else {
       for(int i=0; i<threads; i++)
         mr->map_thread_failed[i] = -1;
+    }
+
+    mr->infd_failed = malloc(sizeof(int) * threads);
+    if(mr->infd_failed == NULL) {
+      free(mr->map_thread_failed);
+      free(mr->mapfn_failed);
+      free(mr->map_threads);
+      free(mr->infd);
+      free(mr->args);
+      free(mr->buffer);
+      free(mr);
+      return NULL;
+    } else {
+      for(int i=0; i<threads; i++)
+        mr->infd_failed[i] = -1;
     }
 
 		return mr;

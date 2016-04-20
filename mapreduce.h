@@ -85,12 +85,11 @@ struct map_reduce {
 	int n_threads,             				// Number of worker threads to use
    		count,                 				// counts bytes in buffer
 			*infd, outfd,							  	// File discripter
+			*infd_failed, outfd_failed,
 			*map_thread_failed,
 			reduce_thread_failed,
 			*mapfn_failed,
 			reducefn_failed;
-
-	FILE **iF, *oF;
 
 	struct args_helper *args;
 
