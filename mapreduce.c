@@ -242,7 +242,7 @@ mr_finish(struct map_reduce *mr)
   for(int i=0; i<(mr->n_threads); i++)
     infd_failed[i] = close(mr->infd[i]);
   // for outfd
-  outfd_failed[mr->n_threads] = close(mr->outfd);
+  outfd_failed= close(mr->outfd);
 
   // Checking map success
   for(int i=0; i<(mr->n_threads); i++) {
