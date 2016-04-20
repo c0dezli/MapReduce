@@ -241,45 +241,9 @@ mr_destroy(struct map_reduce *mr) {
  * if any of the Map or Reduce functions failed.
  */
 int
-mr_finish(struct map_reduce *mr)
-{
-  // //wrong init for reduce_thread, not_full,
-  // //       not_empty, reducefn_failed, if, oF
-  //
-  // // Checking availability
-  // if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;
-  //
-  // bool fn_run_success = false,
-  //      close_fd_success = false,
-  //      thread_create_success = false,
-  //      thread_close_success = false;
-  //
-  // // For reduce
-  // fn_run_success = (mr->reducefn_failed == 0); //reduce function returns 0 when success
-  // close_fd_success = (close(mr->outfd) != -1); // close returns -1 when fails
-  // thread_create_success = (mr->reduce_thread_failed == 0);  // pthread_create returns 0 when success
-  //
-  // if(thread_create_success)
-  //   thread_close_success = (pthread_join(mr->reduce_thread, NULL) == 0);
-  //
-  // if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
-  //   return -1;
-  //
-  // // For map
-  // for(int i=0; i<(mr->n_threads); i++) {
-  //     fn_run_success = (mr->mapfn_failed[i] == 0);              // map function returns 0 when success
-  //     close_fd_success = (close(mr->infd[i]) != -1);            // close returns -1 when fails
-  //     thread_create_success = (mr->map_thread_failed[i] == 0);  // pthread_create returns 0 when success
-  //
-  //     if(thread_create_success)   // thread must exists before we close it
-  //       thread_close_success = (pthread_join(mr->map_threads[i], NULL) == 0); // pthread_join returns 0 when success
-  //
-  //     if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
-  //       return -1;
-  // }
+mr_finish(struct map_reduce *mr) {
 
-
-  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) return -1; // out of memory
+//  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) return -1; // out of memory
 
     for(int i=0; i<(mr->n_threads); i++) {
         if (close(mr->infd[i]) == -1 || mr->mapfn_failed[i] != 0)
