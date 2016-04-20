@@ -262,17 +262,28 @@ mr_finish(struct map_reduce *mr) {
 
 //  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) return -1; // out of memory
 
-    for(int i=0; i<(mr->n_threads); i++) {
-        if (close(mr->infd[i]) == -1 || mr->mapfn_failed[i] != 0)
-          return -1;  // failed
-        if (mr->map_thread_failed[i] != 0 || pthread_join(mr->map_threads[i], NULL) != 0)
-          return -1; // failed
-    }
+    // close fd
+    for(int i=0; i<(mr->n_threads); i++)
+      mr->infd_failed[i] = close(mr->infd[i]);
 
-    if(close(mr->outfd) == -1 || mr->reducefn_failed != 0)
-      return -1;  // failed
-    if(mr->reduce_thread_failed != 0 || pthread_join(mr->reduce_thread, NULL) != 0)
+    mr->outfd_failed = close(mr->outfd);
+
+    // close threads
+    for(int i=0; i<(mr->n_threads); i++)
+        if (mr->map_thread_failed[i] != 0)
+          pthread_join(mr->map_threads[i], NULL);
+
+    if(mr->reduce_thread_failed != 0)
+      pthread_join(mr->reduce_thread, NULL);
+
+    // check if success
+    if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
       return -1;
+
+    for(int i=0; i<(mr->n_threads); i++){
+        if (mr->infd_failed[i] == -1 || mr->mapfn_failed[i] != 0)
+          return -1;  // failed
+    }
 
     return 0; //success
   //check array
