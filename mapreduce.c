@@ -162,6 +162,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
     mr->count = -1;         // give meaningless init value
     mr->outfd = -1;
+    mr->reduce_failed = -1;
 
     mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->buffer == NULL) {
@@ -238,6 +239,9 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
+  //wrong init for reduce_thread, not_full,
+//       not_empty, reduce_failed, if, oF
+
   if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) { // out of memory
     for(int i=0; i<(mr->n_threads); i++) {
         if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1 || mr->map_failed[i] != 0)

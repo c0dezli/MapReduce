@@ -6,3 +6,22 @@
 
 == Sources consulted ==
 (please cite here as well as in comments by the relevant code)
+
+
+== How to use the gdb ==
+
+```
+to use gdb
+type $ gdb <exec file>
+(gdb) r <args>
+if segfault
+(gdb) bt where
+ find the line with your code on iit
+ if your error is on line 1
+  (gdb) f 1
+   0x0 is a segfault
+   0xabababababababababab is uninitialized
+ info locals -print out all local var
+ info args -prints out all args
+ info thr -prints out all thread
+```
