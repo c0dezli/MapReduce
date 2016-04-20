@@ -173,7 +173,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
-    mr->map_threads = malloc(sizeof(pthread_t) * threads);
+    mr->map_threads = calloc(sizeof(pthread_t) * threads);
     if(mr->infd == NULL) {
       free(mr->infd);
       free(mr->args);
@@ -234,14 +234,11 @@ mr_finish(struct map_reduce *mr)
   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;// out of memory
 
   for(int i=0; i<(mr->n_threads); i++) {
-      int a1 = pthread_join(mr->map_threads[i], NULL), // failed if != 0
-          a2 = close(mr->infd[i]), // failed if == -1
-          a3 = mr->map_failed[i];  // failed if != 0
-      if (a1!=0 || a2==-1 || a3!=0)
+      if (mr->map_failed[i] != 0 || close(mr->infd[i]) == -1 || pthread_join(mr->map_threads[i], NULL) != 0)
         return -1;  // failed
   }
 
-  if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1 || mr->reduce_failed != 0){
+  if(mr->reduce_failed != 0 || close(mr->outfd) == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
     printf("reduce_thread\n");
     return -1;  // failed
   }
