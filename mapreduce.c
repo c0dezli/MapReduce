@@ -238,7 +238,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-  free(infd_failed);
+  free(mr->infd_failed);
   free(mr->map_thread_failed);
   free(mr->mapfn_failed);
   free(mr->map_threads);
