@@ -235,14 +235,14 @@ mr_finish(struct map_reduce *mr)
   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;
 
   // Closing all fd
-  int *infd_failed = malloc (sizeof(int) * (mr->map_threads+1)),
+  int *infd_failed = malloc (sizeof(int) * mr->n_threads),
       outfd_failed = -1;
 
   // for infd
   for(int i=0; i<(mr->n_threads); i++)
-    fd_failed[i] = close(mr->infd[i]);
+    infd_failed[i] = close(mr->infd[i]);
   // for outfd
-  fd_failed[mr->threads] = close(mr->outfd);
+  outfd_failed[mr->n_threads] = close(mr->outfd);
 
   // Checking map success
   for(int i=0; i<(mr->n_threads); i++) {
