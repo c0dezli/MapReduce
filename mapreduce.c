@@ -234,10 +234,10 @@ mr_finish(struct map_reduce *mr)
   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;// out of memory
 
   for(int i=0; i<(mr->n_threads); i++) {
-      int a1 = pthread_join(mr->map_threads[i], NULL); // failed if != 0
-          a2 = close(mr->infd[i]); // failed if == -1
-          a3 = mr->map_failed[i]  // failed if != 0
-      if (a1 || a2 || a3)
+      int a1 = pthread_join(mr->map_threads[i], NULL), // failed if != 0
+          a2 = close(mr->infd[i]), // failed if == -1
+          a3 = mr->map_failed[i];  // failed if != 0
+      if (a1!=0 || a2==-1 || a3!=0)
         return -1;  // failed
   }
 
