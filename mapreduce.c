@@ -229,21 +229,25 @@ int
 mr_finish(struct map_reduce *mr)
 {
   //wrong init for reduce_thread, not_full,
-//       not_empty, reduce_failed, if, oF
+  //       not_empty, reduce_failed, if, oF
 
   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;// out of memory
 
   for(int i=0; i<(mr->n_threads); i++) {
-      if (mr->map_failed[i] != 0 || close(mr->infd[i]) == -1 || pthread_join(mr->map_threads[i], NULL) != 0)
-        return -1;  // failed
+      int s1 = mr->map_failed[i],
+          s2 = close(mr->infd[i]);
+
+      if(s1 || s2) return -1;            // check seperately to aviod sege fault
+      else if(pthread_join(mr->map_threads[i], NULL) != 0) return -1;
   }
 
-  if(mr->reduce_failed != 0 || close(mr->outfd) == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
-    printf("reduce_thread\n");
-    return -1;  // failed
-  }
+  int s1 = close(mr->outfd),
+      s2 = mr->reduce_failed;
 
-  return 0;
+  if(s1 || s2) return -1;            // check seperately to aviod sege fault
+  else if(pthread_join(mr->reduce_threads, NULL) != 0) return -1;
+
+  return 0; // success
   //check array
   //check pthread join
    // if every M&R callback returned 0
