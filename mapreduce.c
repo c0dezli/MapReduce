@@ -26,6 +26,22 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
+
+//**********************************
+//to use gdb
+//type $ gdb <exec file>
+//(gdb) r <args>
+//if segfault
+//(gdb) bt where
+// find the line with your code on iit
+// if your error is on line 1
+//  (gdb) f 1
+//   0x0 is a segfault
+//   0xabababababababababab is uninitialized 
+// info locals -print out all local var
+// info args -prints out all args
+// info thr -prints out all thread
+
 struct args_helper{									// The args for map function
  struct map_reduce *mr;
  int infd, outfd, nmaps, id;
@@ -183,7 +199,9 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
-    mr->map_threads = malloc(sizeof(pthread_t) * threads);
+    mr->map_threads = malloc(sizeof(pthread_t) * threads*3);//try this
+//    mr->map_threads = malloc(sizeof(pthread_t) * threads);//there is an allocation problem at this line.
+//    threads may be allocated with different sizes due to machines for code
     if(mr->infd == NULL) {
       free(mr->infd);
       free(mr->args);
@@ -235,6 +253,10 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr)
 {
+
+//wrong init for reduce_thread, not_full, 
+//       not_empty, reduce_failed, if, oF
+
   if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) { // out of memory
     for(int i=0; i<(mr->n_threads); i++) {
         if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1 || mr->map_failed[i] !=0)
