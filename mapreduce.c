@@ -255,10 +255,10 @@ mr_finish(struct map_reduce *mr) {
 
     // close threads
     for(int i=0; i<(mr->n_threads); i++)
-        if (mr->map_thread_failed[i] != 0)
+        if (mr->map_thread_failed[i] == 0)
           pthread_join(mr->map_threads[i], NULL);
 
-    if(mr->reduce_thread_failed != 0)
+    if(mr->reduce_thread_failed == 0)
       pthread_join(mr->reduce_thread, NULL);
 
     // check if success
