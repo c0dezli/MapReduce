@@ -38,9 +38,9 @@ struct args_helper{									// The args for map function
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
   printf("infd %d, id %d, nmaps %d \n\n\n",args->infd, args->id, args->nmaps);
-  args->mr->mapfn_failed[map_args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
+  args->mr->mapfn_failed[args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
 
-  pthread_exit((void*) &args->mr->mapfn_failed[map_args->id]);
+  pthread_exit((void*) &args->mr->mapfn_failed[args->id]);
   //return (void *)map_args;
 }
 
