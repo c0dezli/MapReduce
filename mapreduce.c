@@ -173,7 +173,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
-    mr->map_threads = calloc(sizeof(pthread_t) * threads);
+    mr->map_threads = malloc(sizeof(pthread_t) * threads);
     if(mr->infd == NULL) {
       free(mr->infd);
       free(mr->args);
