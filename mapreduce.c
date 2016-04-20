@@ -35,21 +35,24 @@ struct args_helper{									// The args for map function
 
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
-static void *map_wrapper(void* arg) {
-  struct args_helper *map_args = (struct args_helper *) arg;
-  map_args->mr->mapfn_failed[map_args->id] = map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
+static void *map_wrapper(void* map_args) {
+  struct args_helper *args = (struct args_helper *) map_args;
+  print("infd %d, id %d, nmaps %d \n\n\n",args->infd, args->id, args->nmaps);
+  args->mr->mapfn_failed[map_args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
 
-  pthread_exit((void*) &map_args->mr->mapfn_failed[map_args->id]);
+  pthread_exit((void*) &args->mr->mapfn_failed[map_args->id]);
   //return (void *)map_args;
 }
 
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
-static void *reduce_wrapper(void* arg) {
-  struct args_helper *reduce_args = (struct args_helper *) arg;
-  reduce_args->mr->reducefn_failed = reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
+static void *reduce_wrapper(void* reduce_args) {
+  struct args_helper *args = (struct args_helper *) reduce_args;
+  print("outfd %d, nmaps %d \n\n\n",args->outfd, args->nmaps);
 
-  pthread_exit((void*) &reduce_args->mr->reducefn_failed);
+  args->mr->reducefn_failed = args->reduce(args->mr, args->outfd, args->nmaps);
+
+  pthread_exit((void*) &args->mr->reducefn_failed);
   //return (void *)reduce_args;
 }
 
