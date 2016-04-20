@@ -265,7 +265,7 @@ mr_finish(struct map_reduce *mr)
   if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
     return -1;
 
-  // Checking map success
+  // For map
   for(int i=0; i<(mr->n_threads); i++) {
       fn_run_success = (mr->mapfn_failed[i] == 0);              // map function returns 0 when success
       close_fd_success = (close(mr->infd[i]) != -1);            // close returns -1 when fails
@@ -273,16 +273,9 @@ mr_finish(struct map_reduce *mr)
 
       if(thread_create_success)   // thread must exists before we close it
         thread_close_success = (pthread_join(mr->map_threads[i], NULL) == 0); // pthread_join returns 0 when success
-      }
 
       if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
         return -1;
-  }
-
-  // Checking reduce success
-  if(mr->reducefn_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
-    free(infd_failed);
-    return -1;  // failed
   }
 
   return 0;
