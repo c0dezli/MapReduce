@@ -55,8 +55,7 @@ static int mr_printer(struct map_reduce *mr) {
  */
 static void *map_wrapper(void* arg) {
   struct args_helper *map_args = (struct args_helper *) arg;
-  map_args->mr->mapfn_failed[map_args->id] =
-    map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
+  map_args->mr->mapfn_failed[map_args->id] = map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
 
   pthread_exit((void*) &map_args->mr->mapfn_failed[map_args->id]);
   //return (void *)map_args;
@@ -66,8 +65,7 @@ static void *map_wrapper(void* arg) {
  */
 static void *reduce_wrapper(void* arg) {
   struct args_helper *reduce_args = (struct args_helper *) arg;
-  reduce_args->mr->reducefn_failed =
-    reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
+  reduce_args->mr->reducefn_failed = reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
   pthread_exit((void*) &reduce_args->mr->reducefn_failed);
   //return (void *)reduce_args;
@@ -106,6 +104,8 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->nmaps = mr->n_threads;
 
 		mr->map_thread_failed[i] = pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
+    if (mr->map_thread_failed[i] != 0)
+      return -1;
 	}
 
   // Create a thread for reduce function
@@ -121,21 +121,12 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->nmaps = mr->n_threads;
 
 	mr->reduce_thread_failed =  pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
+  if (mr->reduce_thread_failed != 0)
+    return -1;
+
 	return 0;
 }
 
-/**
- * Allocates and initializes an instance of the MapReduce framework.  This
- * function should allocate a map_reduce structure and any memory or resources
- * that may be needed by later functions.
- *
- * map      Pointer to map callback function
- * reduce   Pointer to reduce callback function
- * threads  Number of worker threads to use
- *
- * Returns a pointer to the newly allocated map_reduce structure on success, or
- * NULL to indicate failure.
- */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
     // http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
@@ -229,13 +220,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		return mr;
 }
 
-/**
- * Destroys and cleans up an existing instance of the MapReduce framework.  Any
- * resources which were acquired or created in mr_create should be released or
- * destroyed here.
- *
- * mr  Pointer to the instance to destroy and clean up
- */
 void
 mr_destroy(struct map_reduce *mr) {
   free(mr->infd_failed);
