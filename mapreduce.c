@@ -33,24 +33,6 @@ struct args_helper{									// The args for map function
  reduce_fn reduce;
 };
 
-static int mr_printer(struct map_reduce *mr) {
-
-  if(mr->buffer != NULL)
-    printf("Buffer is set\n");       						// Create the buffer
-  if(mr->map != NULL)
-    printf("Map function pointer is set\n");										// Declear the function pointers
-  if(mr->reduce != NULL)
-    printf("Reduce function pointer is set\n");
-
-  printf("n_threads value is %d\n", mr->n_threads);             				// Number of worker threads to use
-  printf("count value is %d\n", mr->count);// counts bytes in buffer
-
-  if(mr->args != NULL)
-    printf("args is set\n\n\n\n" );
-
-  return 0;
-}
-
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* arg) {
@@ -93,7 +75,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
 
     mr->infd[i] = open(inpath, O_RDONLY);  // assign different fd to every map thread
-    if (mr->infd[i] < 0) return -1;
+    if (mr->infd[i] ==  -1) return -1;
 
     map_args = &(mr->args[i]);
     map_args->mr = mr;
@@ -111,7 +93,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   // Create a thread for reduce function
 
   mr->outfd = open(outpath, O_CREAT);
-  if (mr->outfd<0) return -1;
+  if (mr->outfd == -1) return -1;
 
   reduce_args = &(mr->args[mr->n_threads]);
   reduce_args->mr = mr;
@@ -244,9 +226,6 @@ mr_destroy(struct map_reduce *mr) {
  */
 int
 mr_finish(struct map_reduce *mr) {
-
-   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL) return -1; // out of memory
-
     // close fd
     for(int i=0; i<(mr->n_threads); i++)
       mr->infd_failed[i] = close(mr->infd[i]);
@@ -255,10 +234,10 @@ mr_finish(struct map_reduce *mr) {
 
     // close threads
     for(int i=0; i<(mr->n_threads); i++)
-        if (mr->map_thread_failed[i] == 0)
+        if (mr->map_thread_failed[i] == 0) //success
           pthread_join(mr->map_threads[i], NULL);
 
-    if(mr->reduce_thread_failed == 0)
+    if(mr->reduce_thread_failed == 0) // success
       pthread_join(mr->reduce_thread, NULL);
 
     // check if success
