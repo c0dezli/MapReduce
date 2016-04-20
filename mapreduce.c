@@ -55,10 +55,10 @@ static int mr_printer(struct map_reduce *mr) {
  */
 static void *map_wrapper(void* arg) {
   struct args_helper *map_args = (struct args_helper *) arg;
-  map_args->mr->map_failed[map_args->id] =
+  map_args->mr->mapfn_failed[map_args->id] =
     map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
 
-  pthread_exit((void*) &map_args->mr->map_failed[map_args->id]);
+  pthread_exit((void*) &map_args->mr->mapfn_failed[map_args->id]);
   //return (void *)map_args;
 }
 
@@ -66,10 +66,10 @@ static void *map_wrapper(void* arg) {
  */
 static void *reduce_wrapper(void* arg) {
   struct args_helper *reduce_args = (struct args_helper *) arg;
-  reduce_args->mr->reduce_failed =
+  reduce_args->mr->reducefn_failed =
     reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
-  pthread_exit((void*) &reduce_args->mr->reduce_failed);
+  pthread_exit((void*) &reduce_args->mr->reducefn_failed);
   //return (void *)reduce_args;
 }
 
@@ -105,7 +105,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
+		mr->map_thread_failed[i] = pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
 	}
 
   // Create a thread for reduce function
@@ -120,7 +120,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->outfd = mr->outfd;
   reduce_args->nmaps = mr->n_threads;
 
-	pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
+	mr->reduce_thread_failed =  pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
 	return 0;
 }
 
@@ -151,7 +151,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
     mr->count = -1;         // give meaningless init value
     mr->outfd = -1;
-    mr->reduce_failed = -1;
+    mr->reducefn_failed = -1;
 
     mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
     if (mr->buffer == NULL) {
@@ -182,7 +182,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     }
 
-    mr->map_failed = malloc(sizeof(int) * threads);
+    mr->mapfn_failed = malloc(sizeof(int) * threads);
     if(mr->infd == NULL) {
       free(mr->map_threads);
       free(mr->infd);
@@ -192,7 +192,21 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
       return NULL;
     } else {
       for(int i=0; i<threads; i++)
-        mr->map_failed[i] = -1;
+        mr->mapfn_failed[i] = -1;
+    }
+
+    mr->map_thread_failed = malloc(sizeof(int) * threads);
+    if(mr->infd == NULL) {
+      free(mr->mapfn_failed);
+      free(mr->map_threads);
+      free(mr->infd);
+      free(mr->args);
+      free(mr->buffer);
+      free(mr);
+      return NULL;
+    } else {
+      for(int i=0; i<threads; i++)
+        mr->map_thread_failed[i] = -1;
     }
 
 		return mr;
@@ -207,7 +221,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
  */
 void
 mr_destroy(struct map_reduce *mr) {
-  free(mr->map_failed);
+  free(mr->map_thread_failed);
+  free(mr->mapfn_failed);
   free(mr->map_threads);
   free(mr->infd);
   free(mr->args);
@@ -229,43 +244,47 @@ int
 mr_finish(struct map_reduce *mr)
 {
   //wrong init for reduce_thread, not_full,
-  //       not_empty, reduce_failed, if, oF
+  //       not_empty, reducefn_failed, if, oF
 
   // Checking availability
   if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;
 
-  // Closing all fd
-  int *infd_failed = malloc (sizeof(int) * mr->n_threads),
-      outfd_failed = -1;
+  bool fn_run_success = false,
+       close_fd_success = false,
+       thread_create_success = false,
+       thread_close_success = false;
 
-  while (infd_failed == NULL)
-    infd_failed = malloc (sizeof(int) * mr->n_threads);
-    
-  if(infd_failed != NULL)
-    for(int i; i<mr->n_threads; i++)
-      infd_failed[i] = -1;
+  // For reduce
+  fn_run_success = (mr->reducefn_failed == 0); //reduce function returns 0 when success
+  close_fd_success = (close(mr->outfd) != -1); // close returns -1 when fails
+  thread_create_success = (mr->reduce_thread_failed == 0);  // pthread_create returns 0 when success
 
-  // for infd
-  for(int i=0; i<(mr->n_threads); i++)
-    infd_failed[i] = close(mr->infd[i]);
-  // for outfd
-  outfd_failed= close(mr->outfd);
+  if(thread_create_success)
+    thread_close_success = (pthread_join(mr->reduce_thread, NULL) == 0);
+
+  if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
+    return -1;
 
   // Checking map success
   for(int i=0; i<(mr->n_threads); i++) {
-      if (mr->map_failed[i] != 0 || infd_failed[i] == -1 || pthread_join(mr->map_threads[i], NULL) != 0){
-        free(infd_failed);
-        return -1;  // failed
+      fn_run_success = (mr->mapfn_failed[i] == 0);              // map function returns 0 when success
+      close_fd_success = (close(mr->infd[i]) != -1);            // close returns -1 when fails
+      thread_create_success = (mr->map_thread_failed[i] == 0);  // pthread_create returns 0 when success
+
+      if(thread_create_success)   // thread must exists before we close it
+        thread_close_success = (pthread_join(mr->map_threads[i], NULL) == 0); // pthread_join returns 0 when success
       }
+      
+      if(!fn_run_success || !close_fd_success || !thread_create_success || !thread_close_success)
+        return -1;
   }
 
   // Checking reduce success
-  if(mr->reduce_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
+  if(mr->reducefn_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0){
     free(infd_failed);
     return -1;  // failed
   }
 
-  free(infd_failed);
   return 0;
   //check array
   //check pthread join

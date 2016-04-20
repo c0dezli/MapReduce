@@ -83,9 +83,11 @@ struct map_reduce {
 
 	int n_threads,             				// Number of worker threads to use
    		count,                 				// counts bytes in buffer
-			*infd, outfd,								// File discripter
-			*map_failed,
-			reduce_failed;
+			*infd, outfd,							  	// File discripter
+			*map_thread_failed,
+			reduce_thread_failed,
+			*mapfn_failed,
+			reducefn_failed;
 
 	FILE **iF, *oF;
 
@@ -204,4 +206,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif
