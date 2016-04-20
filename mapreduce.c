@@ -279,10 +279,10 @@ mr_finish(struct map_reduce *mr)
   // }
 
 
-  if(mr != NULL && mr->mapfn_threads != NULL && mr->infd != NULL) return -1; // out of memory
+  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) return -1; // out of memory
 
     for(int i=0; i<(mr->n_threads); i++) {
-        if (close(mr->infd[i]) == -1 || mr->map_failed[i] != 0)
+        if (close(mr->infd[i]) == -1 || mr->mapfn_failed[i] != 0)
           return -1;  // failed
         if (mr->map_thread_failed[i] != 0 || pthread_join(mr->map_threads[i], NULL) != 0)
           return -1; // failed
@@ -290,7 +290,7 @@ mr_finish(struct map_reduce *mr)
 
     if(close(mr->outfd) == -1 || mr->reducefn_failed != 0)
       return -1;  // failed
-    if(mr->reduce_thread_failed != 0 || pthread_join(mr->reducefv_thread, NULL) != 0)
+    if(mr->reduce_thread_failed != 0 || pthread_join(mr->reducefn_thread, NULL) != 0)
       return -1;
 
     return 0; //success
