@@ -74,7 +74,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
 	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
 
-    mr->infd[i] = open(inpath, O_RDONLY);  // assign different fd to every map thread
+    mr->infd[i] = open(inpath, O_RDONLY, 644);  // assign different fd to every map thread
     if (mr->infd[i] ==  -1) return -1;
 
     map_args = &(mr->args[i]);
@@ -92,7 +92,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
   // Create a thread for reduce function
 
-  mr->outfd = open(outpath, O_CREAT);
+  mr->outfd = open(outpath, O_WRONLY | O_CREAT | O_TRUNC, 644);
   if (mr->outfd == -1) return -1;
 
   reduce_args = &(mr->args[mr->n_threads]);
