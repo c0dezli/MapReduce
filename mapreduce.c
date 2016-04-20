@@ -231,26 +231,32 @@ mr_finish(struct map_reduce *mr)
   //wrong init for reduce_thread, not_full,
   //       not_empty, reduce_failed, if, oF
 
-  if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;// out of memory
+  // Checking availability
+  if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;
 
+  // Closing all fd
+  int *infd_failed = malloc (sizeof(int) * (mr->map_threads+1)),
+      outfd_failed = -1;
+
+  // for infd
+  for(int i=0; i<(mr->n_threads); i++)
+    fd_failed[i] = close(mr->infd[i]);
+  // for outfd
+  fd_failed[mr->threads] = close(mr->outfd);
+
+  // Checking map success
   for(int i=0; i<(mr->n_threads); i++) {
-      int s1 = mr->map_failed[i],
-          s2 = close(mr->infd[i]);
-
-      if(s1 || s2) return -1;            // check seperately to aviod sege fault
-      else if(pthread_join(mr->map_threads[i], NULL) != 0) return -1;
+      if (mr->map_failed[i] != 0 || infd_failed[i] == -1 || pthread_join(mr->map_threads[i], NULL) != 0)
+        return -1;  // failed
   }
 
-  int s1 = close(mr->outfd),
-      s2 = mr->reduce_failed;
+  // Checking reduce success
+  if(mr->reduce_failed != 0 || outfd_failed == -1 || pthread_join(mr->reduce_thread, NULL) != 0)
+    return -1;  // failed
 
-  if(s1 || s2) return -1;            // check seperately to aviod sege fault
-  else if(pthread_join(mr->reduce_thread, NULL) != 0) return -1;
-
-  return 0; // success
+  return 0;
   //check array
   //check pthread join
-   // if every M&R callback returned 0
 }
 
 /**
