@@ -1,12 +1,39 @@
 == Team members ==
-(put everyone's name here)
+Xiang Li
+Jesse Rong
 
 == Performance evaluation ==
+mr_wordc
+1 thread
+  100B buffer: 
+  1kB buffer:
+  10kB buffer:
+2 threads
+  100B buffer:
+  1kB buffer:
+  10kB buffer:
+4 threads
+  100B buffer:
+  1kB buffer:
+  10kB buffer:
+8 threads
+  100B buffer:
+  1kB buffer:
+  10kB buffer:
+ 
+We expect that the more threads there are, the faster it will take the program to run. Also, the bigger the buffers are, the faster the program will be.
 
 
 == Sources consulted ==
 (please cite here as well as in comments by the relevant code)
 
+https://www.ibm.com/support/knowledgecenter/ssw_aix_71/com.ibm.aix.basetrf1/PTHREAD_MUTEX_INITIALIZER.htm
+
+http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+
+http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+
+http://stackoverflow.com/questions/143123/how-to-create-a-buffer-for-reading-socket-data-in-c
 
 == How to use the gdb ==
 
