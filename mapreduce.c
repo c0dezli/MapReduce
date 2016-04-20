@@ -55,14 +55,8 @@ static int mr_printer(struct map_reduce *mr) {
  */
 static void *map_wrapper(void* arg) {
   struct args_helper *map_args = (struct args_helper *) arg;
-
-  // if(map_args->mr != NULL) {
-  //   printf("The arg->mr is set\n");
-  //   mr_printer(map_args->mr);
-  // }
-  // printf(" The infd is %d, The nmaps is %d, The id is %d\n\n\n\n", map_args->infd, map_args->nmaps, map_args->id);
-
-  map_args->mr->map_failed[map_args->id] = map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
+  map_args->mr->map_failed[map_args->id] =
+    map_args->map(map_args->mr, map_args->infd, map_args->id, map_args->nmaps);
 
   pthread_exit((void*) &map_args->mr->map_failed[map_args->id]);
   //return (void *)map_args;
@@ -72,14 +66,8 @@ static void *map_wrapper(void* arg) {
  */
 static void *reduce_wrapper(void* arg) {
   struct args_helper *reduce_args = (struct args_helper *) arg;
-
-  // if(reduce_args->mr != NULL) {
-  //   printf("The arg->mr is set\n");
-  //   mr_printer(reduce_args->mr);
-  // }
-  // printf(" The out fd is %d, The nmaps is %d\n\n\n\n", reduce_args->outfd, reduce_args->nmaps);
-
-  reduce_args->mr->reduce_failed = reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
+  reduce_args->mr->reduce_failed =
+    reduce_args->reduce(reduce_args->mr, reduce_args->outfd, reduce_args->nmaps);
 
   pthread_exit((void*) &reduce_args->mr->reduce_failed);
   //return (void *)reduce_args;
@@ -159,6 +147,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
+
 
     mr->count = -1;         // give meaningless init value
     mr->outfd = -1;
@@ -242,19 +231,22 @@ mr_finish(struct map_reduce *mr)
   //wrong init for reduce_thread, not_full,
 //       not_empty, reduce_failed, if, oF
 
-  if(mr != NULL && mr->map_threads != NULL && mr->infd != NULL) { // out of memory
-    for(int i=0; i<(mr->n_threads); i++) {
-        if (pthread_join(mr->map_threads[i], NULL) != 0 || close(mr->infd[i]) == -1 || mr->map_failed[i] != 0)
-          return -1;  // failed
-    }
+  if(mr == NULL || mr->map_threads == NULL || mr->infd == NULL)  return -1;// out of memory
 
-    if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1 || mr->reduce_failed != 0){
-      printf("reduce_thread\n");
-      return -1;  // failed
-    }
+  for(int i=0; i<(mr->n_threads); i++) {
+      int a1 = pthread_join(mr->map_threads[i], NULL); // failed if != 0
+          a2 = close(mr->infd[i]); // failed if == -1
+          a3 = mr->map_failed[i]  // failed if != 0
+      if (a1 || a2 || a3)
+        return -1;  // failed
+  }
 
-    return 0;
-  } else return -1;
+  if(pthread_join(mr->reduce_thread, NULL) != 0 || close(mr->outfd) == -1 || mr->reduce_failed != 0){
+    printf("reduce_thread\n");
+    return -1;  // failed
+  }
+
+  return 0;
   //check array
   //check pthread join
    // if every M&R callback returned 0
