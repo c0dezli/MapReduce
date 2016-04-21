@@ -281,11 +281,17 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   int kv_size = kv->keysz + kv->valuesz;
 
   pthread_mutex_lock(&mr->_lock);
+  //while(mr->count == MAX) //from the Lecture 30,31 demo code
+   //what is MAX? int MAX == MR_BUFFER_SIZE???
+   //pthread_cond_wait (&mr->notfull, &mr->_lock);
+
   if(mr->size < MR_BUFFER_SIZE){
     mr->buffer[mr->count] = my_kv;
     mr->size+=kv_size;
     mr->count++;
   }
+
+  //pthread_cond_signal (&mr->_lock);//from demo code
   pthread_mutex_unlock(&mr->_lock);
 	//	kv->key;
 	//	kv->value;
@@ -321,14 +327,22 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   my_kv.valuesz = kv->valuesz;
   int kv_size = kv->keysz + kv->valuesz;
 
-  const void *buf;
+//This allows write to compile:  const void *buf;
 
   pthread_mutex_lock(&mr->_lock);
+  //while(mr->count ==0); //from lecture demo code
+    //pthread_cond_wait(&mr->notempty, &mr->_lock);
+
   if(mr->count == 0) return 0;
   else {
-    write(mr->outfd, &buf, 1); // write to file
+
+//    memset(mr, 0, 1);//I don't know if this will work
+                             //http://stackoverflow.com/questions/5844242/valgrind-yells-about-an-uninitialised-bytes
+    write(mr->outfd, &mr->buffer[mr->count], 1);
+//    write(mr->outfd, &buf, 1); // write to file
     mr->size -= kv_size;
     mr->count--;
+  //pthread_cond_signal (&mr->notfull);//from demo code
   }
   pthread_mutex_unlock(&mr->_lock);
   //	kv->key;
