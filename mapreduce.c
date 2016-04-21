@@ -283,13 +283,13 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   my_kv.valuesz = kv->valuesz;
   int kv_size = kv->keysz + kv->valuesz;
 
-  pthread_mutex_lock(mr->_lock);
-  if(size < MR_BUFFER_SIZE){
-    mr->buffer[count] = my_kv;
+  pthread_mutex_lock(&mr->_lock);
+  if(mr->size < MR_BUFFER_SIZE){
+    mr->buffer[mr->count] = my_kv;
     mr->size+=kv_size;
-    count++;
+    mr->count++;
   }
-  pthread_mutex_unlock(mr->_lock);
+  pthread_mutex_unlock(&mr->_lock);
 	//	kv->key;
 	//	kv->value;
 	//	kv->keysz + kv->valuesz = total size;
@@ -324,14 +324,14 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   my_kv.valuesz = kv->valuesz;
   int kv_size = kv->keysz + kv->valuesz;
 
-  pthread_mutex_lock(mr->_lock);
-  if(count == 0) return 0;
+  pthread_mutex_lock(&mr->_lock);
+  if(mr->count == 0) return 0;
   else {
     // consume her
     mr->size -= kv_size;
-    count--;
+    mr->count--;
   }
-  pthread_mutex_unlock(mr->_lock);
+  pthread_mutex_unlock(&mr->_lock);
   //	kv->key;
 	return 1; // successful
 	return -1; // on error
