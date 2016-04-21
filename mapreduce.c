@@ -123,9 +123,10 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 		mr->map = map;// Save the function inside the sturcture
 		mr->reduce = reduce;
 		mr->n_threads = threads;// Save the static data
+    mr->count = 0;
+    mr->size = 0;
 
-
-    mr->count = -1;         // give meaningless init value
+    // give meaningless init value
     mr->outfd = -1;
     mr->reducefn_failed = -1;
     mr->reduce_thread_failed = -1;
@@ -275,11 +276,18 @@ mr_finish(struct map_reduce *mr) {
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
-  struct kvpair *my_kv = kv;
-  pthread_mutex_lock(mr->_lock);
-  if((mr->count * sizeof(struct kvpair) < MR_BUFFER_SIZE){
-    mr->buffer[count] = kv;
+  struct kvpair my_kv;
+  my_kv.key = kv->key;
+  my_kv.value = kv->value;
+  my_kv.keysz = kv->keysz;
+  my_kv.valuesz = kv->valuesz;
+  int kv_size = kv->keysz + kv->valuesz;
 
+  pthread_mutex_lock(mr->_lock);
+  if(size < MR_BUFFER_SIZE){
+    mr->buffer[count] = my_kv;
+    mr->size+=kv_size;
+    count++;
   }
   pthread_mutex_unlock(mr->_lock);
 	//	kv->key;
@@ -309,7 +317,22 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
+  struct kvpair my_kv;
+  my_kv.key = kv->key;
+  my_kv.value = kv->value;
+  my_kv.keysz = kv->keysz;
+  my_kv.valuesz = kv->valuesz;
+  int kv_size = kv->keysz + kv->valuesz;
+
+  pthread_mutex_lock(mr->_lock);
+  if(count == 0) return 0;
+  else {
+    // consume her
+    mr->size -= kv_size;
+    count--;
+  }
+  pthread_mutex_unlock(mr->_lock);
+  //	kv->key;
 	return 1; // successful
-	return 0; // returns without producing another pair
 	return -1; // on error
 }

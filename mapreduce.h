@@ -77,13 +77,14 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	struct kvpair **buffer;        // Create the buffer
+	struct kvpair *buffer;        // Create the buffer
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
 
 	int n_threads,             				// Number of worker threads to use
-   		count,                 				// counts bytes in buffer
+   		count,                 				// counts of kv pairs in buffer
+			size,													// bytes of kv pairs in buffer
 			*infd, outfd,							  	// File discripter
 			*infd_failed, outfd_failed,
 			*map_thread_failed,
