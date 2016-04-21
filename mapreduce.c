@@ -37,7 +37,6 @@ struct args_helper{									// The args for map function
  */
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
-  printf("infd %d, id %d, nmaps %d \n\n\n",args->infd, args->id, args->nmaps);
   args->mr->mapfn_failed[args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
 
   pthread_exit((void*) &args->mr->mapfn_failed[args->id]);
@@ -48,8 +47,6 @@ static void *map_wrapper(void* map_args) {
  */
 static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
-  printf("outfd %d, nmaps %d \n\n\n",args->outfd, args->nmaps);
-
   args->mr->reducefn_failed = args->reduce(args->mr, args->outfd, args->nmaps);
 
   pthread_exit((void*) &args->mr->reducefn_failed);
@@ -327,7 +324,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   pthread_mutex_lock(&mr->_lock);
   if(mr->count == 0) return 0;
   else {
-    // consume her
+    write(mr->outfd, const void *buf, 1); // write to file
     mr->size -= kv_size;
     mr->count--;
   }
