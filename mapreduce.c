@@ -321,10 +321,12 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   my_kv.valuesz = kv->valuesz;
   int kv_size = kv->keysz + kv->valuesz;
 
+  const void *buf;
+
   pthread_mutex_lock(&mr->_lock);
   if(mr->count == 0) return 0;
   else {
-    write(mr->outfd, const void *buf, 1); // write to file
+    write(mr->outfd, &buf, 1); // write to file
     mr->size -= kv_size;
     mr->count--;
   }
