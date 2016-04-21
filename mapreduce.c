@@ -241,9 +241,7 @@ mr_finish(struct map_reduce *mr) {
     // close fd
     for(int i=0; i<(mr->n_threads); i++)
       mr->infd_failed[i] = close(mr->infd[i]);
-
     mr->outfd_failed = close(mr->outfd);
-
 
     // check if success
     if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
@@ -277,7 +275,13 @@ mr_finish(struct map_reduce *mr) {
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
+  struct kvpair *my_kv = kv;
+  pthread_mutex_lock(mr->_lock);
+  if((mr->count * sizeof(struct kvpair) < MR_BUFFER_SIZE){
+    mr->buffer[count] = kv;
 
+  }
+  pthread_mutex_unlock(mr->_lock);
 	//	kv->key;
 	//	kv->value;
 	//	kv->keysz + kv->valuesz = total size;
