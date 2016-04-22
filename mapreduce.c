@@ -34,9 +34,11 @@ struct args_helper{									// The args for map function
 };
 
 struct buffer_node{
-  void *kv;
-  uint32_t keysz;
-	uint32_t valuesz;
+  void *key,
+       *value,
+       *keysz,
+       *valuesz;
+
   struct buffer_node *next;
 };
 
@@ -247,13 +249,12 @@ int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   if(kv == NULL) return -1;
   // get the kv_size
-  int kv_size = kv->keysz + kv->valuesz + 2*sizeof(uint32_t),
-      offset  = 0;
+  int nodesz = kv->keysz + kv->valuesz + 2*sizeof(uint32_t) + sizeof(struct buffer_node *);
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // first check if the buffer is overflow
-  while(mr->size[id] + kv_size > MR_BUFFER_SIZE) {
+  while(mr->size[id] + nodesz > MR_BUFFER_SIZE) {
     if(pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
   // if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
@@ -264,23 +265,17 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   struct buffer_node *new_node = mr->TAIL[id]->next;
   if(new_node == NULL) return -1;
 
-  memmove(&new_node->kv+offset, kv->key, kv->keysz);
-  offset+=kv->keysz;
-  memmove(&new_node->kv+offset, kv->value, kv->valuesz);
-  offset+=kv->valuesz;
-  memmove(&new_node->kv+offset, &kv->keysz, sizeof(uint32_t));
-  offset+=sizeof(uint32_t);
-  memmove(&new_node->kv+offset, &kv->valuesz, sizeof(uint32_t));
-
-  new_node->keysz = kv->keysz;
-  new_node->valuesz = kv->valuesz;
+  memmove(new_node->key, kv->key, kv->keysz);
+  memmove(new_node->value, kv->value, kv->valuesz);
+  memmove(new_node->keysz, &kv->keysz, sizeof(uint32_t));
+  memmove(new_node->valuesz, &kv->valuesz, sizeof(uint32_t));
 
   // change tail->next to tail
   mr->TAIL[id] = new_node;
   mr->TAIL[id]->next = mr->HEAD[id];
 
   // add the size
-  mr->size[id] += kv_size;
+  mr->size[id] += nodesz;
   mr->count[id]++;
 
   printf("Produce: ID is %d, Count is %d,  mr->size[id] is %d, kv_size is %d\n", id, mr->count[id], mr->size[id], kv_size);
@@ -311,22 +306,24 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   }
 
   // read from head
-  int kv_size = 0;
-  memmove(kv->key, &mr->HEAD[id]->kv+kv_size, sizeof(kv->key));//mr->HEAD[id]->keysz);
-  kv_size+=mr->HEAD[id]->keysz;
-  memmove(kv->value, &mr->HEAD[id]->kv+kv_size, sizeof(kv->value));//mr->HEAD[id]->valuesz);   //TODO
-  kv_size+=mr->HEAD[id]->valuesz;
-  memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-  kv_size+=sizeof(uint32_t);
-  memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-  kv_size+=sizeof(uint32_t);
+  int nodesz = (int)(intptr_t)mr->HEAD[id]->keysz + (int)(intptr_t)mr->HEAD[id]->valuesz)
+                + 2 *sizeof(uint32_t) + sizeof(struct buffer_node*);
+
+  memmove(kv->key, mr->HEAD[id]->key, (int)(intptr_t)mr->HEAD[id]->keysz);//mr->HEAD[id]->keysz);
+//  kv_size+=mr->HEAD[id]->keysz;
+  memmove(kv->value, mr->HEAD[id]->value, (int)(intptr_t)mr->HEAD[id]->valuesz);//mr->HEAD[id]->valuesz);   //TODO
+  //kv_size+=mr->HEAD[id]->valuesz;
+  memmove(&kv->keysz, mr->HEAD[id]->keysz, sizeof(uint32_t));
+  //kv_size+=sizeof(uint32_t);
+  memmove(&kv->valuesz, mr->HEAD[id]->valuesz, sizeof(uint32_t));
+  //kv_size+=sizeof(uint32_t);
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
   mr->TAIL[id]->next = mr->HEAD[id];
 
   // decrease size
-  mr->size[id] -= kv_size;
+  mr->size[id] -= nodesz;
   mr->count[id]--;
 
   pthread_cond_signal (&mr->not_full[id]);//from demo code
