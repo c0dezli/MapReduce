@@ -316,22 +316,15 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   }
 
   // read from head
-  int node_size = 0;
+  // read from head
+  int offset = mr->HEAD[id]->keysz;
   memmove(kv->key, &mr->HEAD[id]->kv, (int)mr->HEAD[id]->keysz);
-  node_size += mr->HEAD[id]->keysz;
-  printf("Consume: ID = %d, mr->HEAD[id]->keysz is %d\n", id, mr->HEAD[id]->keysz);
-
-  memmove(kv->value, &mr->HEAD[id]->kv+node_size, (int)mr->HEAD[id]->valuesz);   //TODO
-  node_size += mr->HEAD[id]->valuesz;
-  printf("Consume: ID = %d, mr->HEAD[id]->valuesz is %d\n", id, mr->HEAD[id]->valuesz);
+  memmove(kv->value, &mr->HEAD[id]->kv+offset, (int)mr->HEAD[id]->valuesz);   //TODO
 
   kv->keysz = mr->HEAD[id]->keysz;
-  node_size+=kv->keysz;
-  printf("Consume: ID = %d, kv->keysz is %d\n", id, kv->keysz);
-
   kv->valuesz = mr->HEAD[id]->valuesz;
-  node_size+=kv->valuesz;
-  printf("Consume: ID = %d, kv->valuesz is %d\n", id, kv->valuesz);
+
+  int node_size = kv->keysz + kv->valuesz + 2 * sizeof(uint32_t) + sizeof(struct buffer_node *);
 
   // memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
   // kv_size+=sizeof(uint32_t);
