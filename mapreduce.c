@@ -333,15 +333,17 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  // get the kv_size
-  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz + 2 * sizeof(uint32_t);
-
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
-  while(mr->count[id] == 0) {                  // wait
+  // make surew there is value to consume
+  while(mr->count[id] == 0) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(mr->not_empty, &mr->_lock) != 0) return -1; // wait failed
   }
+
+  // get the kv_size
+  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz + 2 * sizeof(uint32_t);
+
   // read from head
   //=======================================================
   //kv = mr->HEAD[id]->kv;
