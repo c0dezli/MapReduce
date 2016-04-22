@@ -98,6 +98,13 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
        mr->map_thread_failed[i] = -1;
    }
 
+   mr->map_return_values = malloc(threads * sizeof(void*));
+      if (mr->map_return_values == NULL) return NULL;
+      else {
+        for (i = 0; i < threads; i++)
+          mr->map_return_values[i] = (void*)(intptr_t)-1;
+      }
+
    mr->infd_failed = malloc(sizeof(int) * threads);
    if(mr->infd_failed == NULL)return NULL;
    else {
@@ -119,22 +126,28 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
        pthread_cond_init(&mr->reduce_cv[i], NULL);
    }
 
+   // buffer
+   // kv_pair count
    mr->count = calloc(threads, sizeof(int));
    if(mr->count == NULL) return NULL;
-
+   // size in bytes of kvpairs
    mr->size = calloc(threads, sizeof(int));
    if(mr->size == NULL) return NULL;
 
+   //
    mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
    mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
    if(mr->HEAD == NULL || mr->TAIL == NULL) return NULL;
 
 
    // create a buffer list (can contain threads pointers)
-   mr->buffer_list = malloc(sizeof(struct buffer_node) * threads + MR_BUFFER_SIZE * threads);
+   mr->buffer_list = malloc(sizeof(struct buffer_node*) * threads);
    if(mr->buffer_list != NULL) {
      for(int i=0; i<threads; i++){
-       mr->HEAD[i] = mr->TAIL[i] = &mr->buffer_list[i];
+       //buffer_list[i] = calloc(MR_BUFFER_SIZE, sizeof(char));
+       mr->buffer_list[i] = malloc(MR_BUFFER_SIZE);
+
+       mr->HEAD[i] = mr->TAIL[i] = mr->buffer_list[i];
        // make a cycle
        mr->HEAD[i]->next = mr->TAIL[i];
        mr->TAIL[i]->next = mr->HEAD[i];
@@ -203,6 +216,7 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->count);
   free(mr->size);
   free(mr->infd_failed);
+  free(mr->map_return_values);
   free(mr->map_thread_failed);
   free(mr->mapfn_failed);
   free(mr->map_threads);
@@ -214,29 +228,36 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr) {
 
-    // close threads
-    for(int i=0; i<(mr->n_threads); i++)
-        if (mr->map_thread_failed[i] == 0) //success
-          pthread_join(mr->map_threads[i], NULL);
+  void *reduce_return_value;
+  // close threads
+  for(int i=0; i<(mr->n_threads); i++) {
+      if (mr->map_thread_failed[i] == 0) { //success
+        if(pthread_join(mr->map_threads[i], &mr->map_return_values[i])) { // failed
+          return -1;
+        }
+      pthread_cond_signal(&mr->reduce_cv[i]);
+      }
+  }
 
-    if(mr->reduce_thread_failed == 0) // success
-      pthread_join(mr->reduce_thread, NULL);
-
-    // close fd
-    for(int i=0; i<(mr->n_threads); i++)
-      mr->infd_failed[i] = close(mr->infd[i]);
-    mr->outfd_failed = close(mr->outfd);
-
-    // check if success
-    if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
+  if(mr->reduce_thread_failed == 0) // success
+    if(pthread_join(mr->reduce_thread, &reduce_return_value)) // failed
       return -1;
 
-    for(int i=0; i<(mr->n_threads); i++){
-        if (mr->infd_failed[i] == -1 || mr->mapfn_failed[i] != 0)
-          return -1;  // failed
-    }
+  // close fd
+  for(int i=0; i<(mr->n_threads); i++)
+    mr->infd_failed[i] = close(mr->infd[i]);
+  mr->outfd_failed = close(mr->outfd);
 
-    return 0; //success
+  // check if success
+  if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
+    return -1;
+
+  for(int i=0; i<(mr->n_threads); i++){
+      if (mr->infd_failed[i] == -1 || mr->mapfn_failed[i] != 0)
+        return -1;  // failed
+  }
+
+  return 0; //success
   //check array
 }
 

@@ -79,8 +79,10 @@ struct map_reduce {
 	pthread_cond_t *map_cv,
 								 *reduce_cv;
 
-	struct buffer_node *buffer_list,	//set up buffer
-										 **HEAD, **TAIL;
+	void **map_return_values;
+
+	struct buffer_node **buffer_list,	//set up buffer
+										 **HEAD, **TAIL; // a list of HEAD and TAIL pointers
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
