@@ -299,10 +299,15 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   NEW->next = mr->HEAD[id];
 
   // insert into the tail
-  mr->TAIL[id]->next = NEW;
-  mr->TAIL[id] = NEW;
-  mr->TAIL[id]->next = mr->HEAD[id];
-
+  if(mr->HEAD == mr->TAIL){
+    mr->TAIL[id] = NEW;
+    mr->TAIL[id]->next = NEW;
+    mr->TAIL[id]->next = mr->HEAD[id];
+  } else {
+    mr->TAIL[id]->next = NEW;
+    mr->TAIL[id] = NEW;
+    mr->TAIL[id]->next = mr->HEAD[id];
+  }
   // add the size
   mr->size[id] += kv_size;
   mr->count[id]++;
