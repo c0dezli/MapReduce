@@ -292,10 +292,10 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   //=============================================
   // NEW->kv = kv;     // NEED TO CHANGE (PUT KV INTO BUFFER)
 
-  memcpy(NEW->key, kv->key, kv->keysz);
-  memcpy(NEW->value, kv->value, kv->valuesz);
-  memcpy(NEW->keysz, kv->keysz, sizeof(uint32_t));
-  memcpy(NEW->valuesz, kv->valuesz, sizeof(uint32_t));
+  memcpy(NEW->kv->key, kv->key, kv->keysz);
+  memcpy(NEW->kv->value, kv->value, kv->valuesz);
+  memcpy(NEW->kv->keysz, kv->keysz, sizeof(uint32_t));
+  memcpy(NEW->kv->valuesz, kv->valuesz, sizeof(uint32_t));
  //=============================================
 
   NEW->next = mr->HEAD[id];
