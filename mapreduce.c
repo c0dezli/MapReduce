@@ -44,117 +44,98 @@ struct buffer_node{
  */
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
-  int status = args->map(args->mr, args->infd, args->id, args->nmaps);
-  //pthread_exit
-  return (void*)(intptr_t)status;
+  args->mr->mapfn_status[args->id] =
+      args->map(args->mr, args->infd, args->id, args->nmaps);
+  return NULL;
 }
 
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
-  int status = args->reduce(args->mr, args->outfd, args->nmaps);
-  return (void*)(intptr_t)status;
+  args->mr->reducefn_status =
+    args->reduce(args->mr, args->outfd, args->nmaps);
+  return NULL;
 }
 
+/*
+Refs:
+http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+*/
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-   // http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+   mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
 
-   struct map_reduce *mr = malloc (sizeof(struct map_reduce));
-   if(mr == NULL) return NULL;
-
-   mr->map = map;// Save the function inside the sturcture
+   if(mr == 0) {  // Check Success
+     free(mr);
+     return NULL;
+   } else {
+   // Save the Parameters
+   mr->map = map;           // Save the function inside the sturcture
    mr->reduce = reduce;
-   mr->n_threads = threads;// Save the static data
+   mr->n_threads = threads; // Save the static data
 
-   // give meaningless init value
+   // File Descriptors
    mr->outfd = -1;
-   mr->reduce_thread_failed = -1;
    mr->outfd_failed = -1;
-   mr->map_thread_count = threads;
-   mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
-   if(mr->args == NULL) return NULL;
-
    mr->infd = malloc (sizeof(int) * threads);
-   if(mr->infd == NULL) return NULL;
-
-   mr->map_threads = malloc(sizeof(pthread_t) * threads);
-   if(mr->map_threads == NULL) return NULL;
-
-
-   mr->map_thread_failed = malloc(sizeof(int) * threads);
-   if(mr->map_thread_failed == NULL) return NULL;
-   else {
-     for(int i=0; i<threads; i++)
-       mr->map_thread_failed[i] = -1;
-   }
-
-   mr->map_return_values = malloc(threads * sizeof(void*));
-      if (mr->map_return_values == NULL) return NULL;
-      else {
-        for (int i=0; i<threads; i++)
-          mr->map_return_values[i] = (void*)(intptr_t)-1;
-      }
-
    mr->infd_failed = malloc(sizeof(int) * threads);
-   if(mr->infd_failed == NULL)return NULL;
-   else {
-     for(int i=0; i<threads; i++)
-       mr->infd_failed[i] = -1;
-   }
+
+   // Threads
+   mr->map_threads = malloc(threads * sizeof(pthread_t));
+   mr->reduce_thread =  malloc(sizeof(pthread_t));
+
+   mr->mapfn_status = malloc(threads * sizeof(int));
+   mr->reducefn_status = -1;
+
+   mr->map_thread_count = threads;
+   mr->map_return_values = malloc(threads * sizeof(void*));
+
+   // Arguments of Funtion Wappers
+   mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
+
+   // Lock & Conditional Variables
    mr->_lock = malloc(threads * sizeof(pthread_mutex_t));
-   if (mr->_lock == NULL) return NULL;
-
    mr->not_full = malloc(threads * sizeof(pthread_cond_t));
-   if(mr->not_full == NULL) return NULL;
-
    mr->not_empty = malloc(threads * sizeof(pthread_cond_t));
-   if(mr->not_empty == NULL) return NULL;
 
-   for (int i=0; i<threads; i++) {
+   for (int i=0; i<threads; i++) {  // Init
        pthread_mutex_init(&mr->_lock[i], NULL);
        pthread_cond_init(&mr->not_full[i], NULL);
        pthread_cond_init(&mr->not_empty[i], NULL);
    }
 
-   // buffer
-   // kv_pair count
-   mr->count = calloc(threads, sizeof(int));
-   if(mr->count == NULL) return NULL;
-   // size in bytes of kvpairs
-   mr->size = calloc(threads, sizeof(int));
-   if(mr->size == NULL) return NULL;
+   // Init the Buffer List
+   mr->count = calloc(threads, sizeof(int)); // Counts of kv_pairs
+   mr->size = calloc(threads, sizeof(int));  // Size in bytes of the kv_pairs
 
-   // create buffer list
    mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
    mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
-   if(mr->HEAD == NULL || mr->TAIL == NULL) return NULL;
 
    for(int i=0; i<threads; i++){
-     //buffer_list[i] = calloc(MR_BUFFER_SIZE, sizeof(char));
      mr->HEAD[i] = malloc(MR_BUFFER_SIZE);
-
      mr->TAIL[i] = mr->HEAD[i];
      // make a cycle
      mr->HEAD[i]->next = mr->TAIL[i];
      mr->TAIL[i]->next = mr->HEAD[i];
    }
-
-
 	 return mr;
+ }
 }
 
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
-
   struct args_helper *map_args,
-             *reduce_args;
+                     *reduce_args;
 
-	for(int i=0; i<(mr->n_threads); i++) {   // Create n threads for map function (n = n_threads)
-
-    mr->infd[i] = open(inpath, O_RDONLY, 644);  // assign different fd to every map thread
-    if (mr->infd[i] ==  -1) return -1;
+  // Create n threads for map function (n = n_threads)
+	for(int i=0; i<(mr->n_threads); i++) {
+    // Assign different fd to every map thread
+    mr->infd[i] = open(inpath, O_RDONLY, 644);
+    if (mr->infd[i] ==  -1) {
+      perror("Cannot open input file\n");
+      return -1;
+    }
 
     map_args = &(mr->args[i]);
     map_args->mr = mr;
@@ -164,15 +145,18 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		mr->map_thread_failed[i] = pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
-    if (mr->map_thread_failed[i] != 0)
+		mr->mapfn_status[i] = pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
+    if (mr->mapfn_status[i] != 0)
       return -1;
 	}
 
   // Create a thread for reduce function
 
   mr->outfd = open(outpath, O_WRONLY | O_CREAT | O_TRUNC, 644);
-  if (mr->outfd == -1) return -1;
+  if (mr->outfd == -1) {
+    perror("Cannot open output file\n");
+    return -1;
+  }
 
   reduce_args = &(mr->args[mr->n_threads]);
   reduce_args->mr = mr;
@@ -181,8 +165,8 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->outfd = mr->outfd;
   reduce_args->nmaps = mr->n_threads;
 
-	mr->reduce_thread_failed =  pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
-  if (mr->reduce_thread_failed != 0)
+	mr->reducefn_status = pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
+  if (mr->reducefn_status != 0)
     return -1;
 
 	return 0;
@@ -191,25 +175,29 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    // free(mr->HEAD[i]->key);
-    // free(mr->HEAD[i]->value);
-    // free(mr->HEAD[i]->keysz);
-    // free(mr->HEAD[i]->valuesz);
     free(mr->HEAD[i]);
   }
   free(mr->HEAD);
   free(mr->TAIL);
+
+  free(mr->infd);
+  free(mr->infd_failed);
+
+  free(mr->map_threads);
+  free(mr->reduce_thread);
+
+  free(mr->mapfn_status);
+  free(mr->map_return_values);
+
   free(mr->not_full);
   free(mr->not_empty);
   free(mr->_lock);
+
+
   free(mr->count);
   free(mr->size);
-  free(mr->infd_failed);
-  free(mr->map_return_values);
-  free(mr->map_thread_failed);
-  free(mr->map_threads);
-  free(mr->infd);
   free(mr->args);
+
   free(mr);
 }
 
@@ -219,15 +207,14 @@ mr_finish(struct map_reduce *mr) {
   void *reduce_return_value;
   // close threads
   for(int i=0; i<(mr->n_threads); i++) {
-      if (mr->map_thread_failed[i] == 0) { //success
-        pthread_join(mr->map_threads[i], &mr->map_return_values[i]); // wait threads to finish
+      if (mr->mapfn_status[i] == 0) { //success
+        pthread_join(mr->map_threads[i], NULL); // wait threads to finish
       }
   }
   mr->map_thread_count = 0;
 
-  if(mr->reduce_thread_failed == 0) // success
-    if(pthread_join(mr->reduce_thread, &reduce_return_value)) // failed
-      return -1;
+  if(mr->reducefn_status == 0) // success
+    pthread_join(mr->reduce_thread, NULL) // failed
 
   // close fd
   for(int i=0; i<(mr->n_threads); i++)
@@ -247,7 +234,6 @@ mr_finish(struct map_reduce *mr) {
   //check array
 }
 
-
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   if(kv == NULL) return -1;
@@ -255,7 +241,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   int node_size = kv->keysz + kv->valuesz + 2 * sizeof(uint32_t) + sizeof(struct buffer_node *),
       offset  = 0;
 
-  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
+  pthread_mutex_lock(&mr->_lock[id]); // lock failed
 
   // first check if the buffer is overflow
   while(mr->size[id] + node_size > MR_BUFFER_SIZE) {

@@ -5,7 +5,7 @@ Jesse Rong jbr5205
 == Performance evaluation ==
 mr_wordc
 1 thread
-  100B buffer: 
+  100B buffer:
   1kB buffer:
   10kB buffer:
 2 threads
@@ -20,19 +20,20 @@ mr_wordc
   100B buffer:
   1kB buffer:
   10kB buffer:
- 
+
 We expect that with increasing threads, the program will run faster and then slower once there are too many threads. Also, the bigger the buffers are, the faster the program will execute.
 
-In addition to the 6 given functions and structure, our c program has 2 more structures, one for the wrapper functions and one for the buffer, which we implemented as a linked list. We have 2 extra functions, both are wrapper functions for map and reduce.  
+In addition to the 6 given functions and structure, our c program has 2 more structures, one for the wrapper functions and one for the buffer, which we implemented as a linked list. We have 2 extra functions, both are wrapper functions for map and reduce.
 
-The reason we used a linked list is because it's easier to keep track of where to produce and where to consume compared to an array. 
+The reason we used a linked list is because it's easier to keep track of where to produce and where to consume compared to an array.
 
-Within the .h file's map_reduce structure, we put a lock, 2 conditional variables, the head and tail nodes to our linked list, informcation about the number and size of key values and file descriptors. 
+Within the .h file's map_reduce structure, we put a lock, 2 conditional variables, the head and tail nodes to our linked list, informcation about the number and size of key values and file descriptors.
 
 In the .c program, we had a lot of trouble with memory. We spent many hours over several days finding out where and why some memory would not be initialized or freed. We also experienced problems with the usage of locks.
 
 == Sources consulted ==
 (please cite here as well as in comments by the relevant code)
+http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
 
 https://www.ibm.com/support/knowledgecenter/ssw_aix_71/com.ibm.aix.basetrf1/PTHREAD_MUTEX_INITIALIZER.htm
 
