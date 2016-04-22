@@ -133,6 +133,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     // Assign different fd to every map thread
     mr->infd[i] = open(inpath, O_RDONLY, 644);
     if (mr->infd[i] ==  -1) {
+      close(mr->infd[i]);
       perror("Cannot open input file\n");
       return -1;
     }
@@ -145,15 +146,16 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
     map_args->id = i;
     map_args->nmaps = mr->n_threads;
 
-		mr->mapfn_status[i] = pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args);
-    if (mr->mapfn_status[i] != 0)
+		if(pthread_create(&mr->map_threads[i], NULL, &map_wrapper, (void *)map_args) != 0) {
+      perror("Failed to create map thread.\n");
       return -1;
+    }
 	}
 
-  // Create a thread for reduce function
-
+  // Create thread for reduce function
   mr->outfd = open(outpath, O_WRONLY | O_CREAT | O_TRUNC, 644);
   if (mr->outfd == -1) {
+    close(mr->outfd);
     perror("Cannot open output file\n");
     return -1;
   }
@@ -165,9 +167,10 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
   reduce_args->outfd = mr->outfd;
   reduce_args->nmaps = mr->n_threads;
 
-	mr->reducefn_status = pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args);
-  if (mr->reducefn_status != 0)
+  if (pthread_create(&mr->reduce_thread, NULL, &reduce_wrapper, (void *)reduce_args) != 0) {
+    perror("Failed to create reduce thread.\n");
     return -1;
+  }
 
 	return 0;
 }
@@ -205,33 +208,38 @@ int
 mr_finish(struct map_reduce *mr) {
 
   void *reduce_return_value;
-  // close threads
+
+  // Close Threads
   for(int i=0; i<(mr->n_threads); i++) {
-      if (mr->mapfn_status[i] == 0) { //success
-        pthread_join(mr->map_threads[i], NULL); // wait threads to finish
-      }
+    if(pthread_join(mr->mappers[i], NULL)) {
+      perror("Failed to wait a map thead end.\n");
+      return -1;
+    }
   }
-  mr->map_thread_count = 0;
 
-  if(mr->reducefn_status == 0) // success
-    pthread_join(mr->reduce_thread, NULL) // failed
+  if(pthread_join(mr->reduce_thread, NULL)) {
+    perror("Failed to wait a map thead end.\n");
+    return -1;
+  }
 
-  // close fd
-  for(int i=0; i<(mr->n_threads); i++)
+  // Close the File Descriptors
+  for(int i=0; i<(mr->n_threads); i++) {
     mr->infd_failed[i] = close(mr->infd[i]);
+  }
   mr->outfd_failed = close(mr->outfd);
 
-  // check if success
-  if (mr->outfd_failed == -1 || (int)(intptr_t)reduce_return_value != 0)
-    return -1;
+  // Check
+  for(int i=0; i<(mr->n_threads); i++) {
 
-  for(int i=0; i<(mr->n_threads); i++){
-      if (mr->infd_failed[i] == -1 || (int)(intptr_t)mr->map_return_values[i] != 0)
-        return -1;  // failed
+    if (mr->outfd_failed   == -1 ||
+        mr->infd_failed[i] == -1 ||
+        reducefn_status    != 0  ||
+        mapfn_status[i]    != 0   )
+
+      return -1;
   }
 
   return 0; //success
-  //check array
 }
 
 int
