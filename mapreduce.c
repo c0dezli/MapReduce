@@ -36,7 +36,7 @@ struct args_helper{									// The args for map function
 struct buffer_node{
   struct kvpair *kv;
   struct buffer_node *next;
-}
+};
 
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
@@ -353,7 +353,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   mr->TAIL[id] = mr->HEAD[id];
 
   // decrease size
-  mr->size[id] -= kvsize;
+  mr->size[id] -= kv_size;
   mr->count[id]--;
 
   pthread_cond_signal (mr->not_full);//from demo code
