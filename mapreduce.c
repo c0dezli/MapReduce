@@ -276,7 +276,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // allocate TAIL->next->kv
   //new_node->kv = malloc(kv_size);
 
-  if(new_node == NULL || new_node->kv == NULL) return -1;
+  //if(new_node == NULL || new_node->kv == NULL) return -1;
+  if(new_node == NULL) return -1;
 
   int addition = 0;
   memmove(&new_node->kv+addition, kv->key, kv->keysz);
