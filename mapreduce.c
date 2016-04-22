@@ -280,27 +280,26 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // allocate TAIL->next
-  mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
+  struct buffer_node *new_node = mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
   // allocate TAIL->next->kv
-  mr->TAIL[id]->next->kv = malloc(kv_size);
-  if(mr->TAIL[id]->next == NULL || mr->TAIL[id]->next->kv == NULL) return -1;
+  new_node->kv = malloc(kv_size);
+
+  if(new_node == NULL || new_node->kv == NULL) return -1;
 
   int addition = 0;
-  memmove(&mr->TAIL[id]->next->kv+addition, kv->key, kv->keysz);
+  memmove(&new_node->kv+addition, kv->key, kv->keysz);
   addition+=kv->keysz;
-  memmove(&mr->TAIL[id]->next->kv+addition, kv->value, kv->valuesz);
+  memmove(&new_node->kv+addition, kv->value, kv->valuesz);
   addition+=kv->valuesz;
-  memmove(&mr->TAIL[id]->next->kv+addition, &kv->keysz, sizeof(uint32_t));
+  memmove(&new_node->kv+addition, &kv->keysz, sizeof(uint32_t));
   addition+=sizeof(uint32_t);
-  memmove(&mr->TAIL[id]->next->kv+addition, &kv->valuesz, sizeof(uint32_t));
+  memmove(&new_node->kv+addition, &kv->valuesz, sizeof(uint32_t));
 
-  mr->TAIL[id]->next->keysz = kv->keysz;
-  mr->TAIL[id]->next->valuesz = kv->valuesz;
-
-  mr->TAIL[id]->next->next = mr->HEAD[id];
+  new_node->keysz = kv->keysz;
+  new_node->valuesz = kv->valuesz;
 
   // change tail->next to tail
-  mr->TAIL[id] = mr->TAIL[id]->next;
+  mr->TAIL[id] = new_node;
   mr->TAIL[id]->next = mr->HEAD[id];
 
   // add the size
@@ -308,7 +307,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   mr->count[id]++;
 
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
-  printf("ID is %d, Count is %d, mr->TAIL[id]->valuesz is %d\n", id, mr->count[id], mr->TAIL[id]->valuesz);
+  printf("ID is %d, Count is %d, mr->TAIL[id]->valuesz is %d\n", id, mr->count[id], new_node->valuesz);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
