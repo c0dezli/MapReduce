@@ -358,7 +358,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   }
 
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
-  if(count > 0){
+  if(mr->count[id]){
     // read from head
     int kv_size = 0;
     memmove(kv->key, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->keysz);
