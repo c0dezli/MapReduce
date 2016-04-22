@@ -274,12 +274,13 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   struct kvpair *new_kv = calloc(1,sizeof(struct kvpair));
   if(NEW == NULL || new_kv == NULL) return -1;
 
+  printf("%s", (char *)kv->key);
 
   memmove(new_kv->key, kv->key, kv->keysz);
   memmove(mr->TAIL[id]->kv->value, kv->value, kv->valuesz);
   memmove(&mr->TAIL[id]->kv->keysz, &kv->keysz, sizeof(uint32_t));
   memmove(&mr->TAIL[id]->kv->valuesz, &kv->valuesz, sizeof(uint32_t));
-  
+
   NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
 
