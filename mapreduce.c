@@ -106,16 +106,16 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->_lock = malloc(threads * sizeof(pthread_mutex_t));
    if (mr->_lock == NULL) return NULL;
 
-   mr->map_cv = malloc(threads * sizeof(pthread_cond_t));
-   if(mr->map_cv == NULL) return NULL;
+   mr->not_full = malloc(threads * sizeof(pthread_cond_t));
+   if(mr->not_full == NULL) return NULL;
 
-   mr->reduce_cv = malloc(threads * sizeof(pthread_cond_t));
-   if(mr->reduce_cv == NULL) return NULL;
+   mr->not_empty = malloc(threads * sizeof(pthread_cond_t));
+   if(mr->not_empty == NULL) return NULL;
 
    for (int i=0; i<threads; i++) {
        pthread_mutex_init(&mr->_lock[i], NULL);
-       pthread_cond_init(&mr->map_cv[i], NULL);
-       pthread_cond_init(&mr->reduce_cv[i], NULL);
+       pthread_cond_init(&mr->not_full[i], NULL);
+       pthread_cond_init(&mr->not_empty[i], NULL);
    }
 
    // buffer
@@ -200,8 +200,8 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->buffer_list);
   free(mr->HEAD);
   free(mr->TAIL);
-  free(mr->map_cv);
-  free(mr->reduce_cv);
+  free(mr->not_full);
+  free(mr->not_empty);
   free(mr->_lock);
   free(mr->count);
   free(mr->size);
@@ -224,7 +224,7 @@ mr_finish(struct map_reduce *mr) {
         if(pthread_join(mr->map_threads[i], &mr->map_return_values[i])) { // failed
           return -1;
         }
-      pthread_cond_signal(&mr->reduce_cv[i]);
+      pthread_cond_signal(&mr->not_empty[i]);
       }
   }
 
@@ -250,11 +250,9 @@ mr_finish(struct map_reduce *mr) {
   //check array
 }
 
-
 int
-mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
-{
-  if(kv == NULL) return -1;
+mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
+  if(kv == NULL) {printf("kv==NULL in produce\n"); return -1;}
   // get the kv_size
   int kv_size = kv->keysz + kv->valuesz + 2*sizeof(uint32_t),
       offset  = 0;
@@ -263,11 +261,11 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 
   // first check if the buffer is overflow
   while(mr->size[id] + kv_size > MR_BUFFER_SIZE) {
-    if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
+    if(pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
   struct buffer_node *new_node = mr->TAIL[id]->next;
-  if(new_node == NULL) return -1;
+  if(new_node == NULL) {printf("new_node==NULL in produce\n"); return -1;}
 
   memmove(&new_node->kv+offset, kv->key, kv->keysz);
   offset+=kv->keysz;
@@ -291,24 +289,30 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
   printf("Produce: ID is %d, Count is %d,  mr->size[id] is %d, kv_size is %d\n", id, mr->count[id], mr->size[id], kv_size);
 
-  pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
+  pthread_cond_signal (&mr->not_empty[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
-	return 1; // successful
+	return 1;
 }
 
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  if(kv == NULL) return -1;
+  if(kv == NULL) {printf("kv==NULL in produce\n"); return -1;}
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
-  // make surew there is value to consume
+
+  // make surewthere is value to consume
   while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
-    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
-    //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
+    if(pthread_cond_wait(&mr->not_empty[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
-  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
+
+  // no more pairs
+  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
+    if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
+    printf("DONE! Consume: ID = %d, no more pairs, return 0\n", id);
+    return 0;
+  }
 
   // read from head
   int kv_size = 0;
@@ -329,7 +333,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   mr->size[id] -= kv_size;
   mr->count[id]--;
 
-  pthread_cond_signal (&mr->map_cv[id]);//from demo code
+  pthread_cond_signal (&mr->not_full[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
   printf("Consume: ID is %d, Count is %d, mr->size[id] is %d, kv_size is %d\n", id, mr->count[id], mr->size[id], kv_size);

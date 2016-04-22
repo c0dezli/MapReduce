@@ -76,8 +76,8 @@ struct map_reduce {
 	pthread_t *map_threads,
 						 reduce_thread;
 
-	pthread_cond_t *map_cv,
-								 *reduce_cv;
+	pthread_cond_t *not_full,
+								 *not_empty;
 
 	void **map_return_values;
 
@@ -210,4 +210,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif
