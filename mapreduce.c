@@ -274,10 +274,14 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   struct kvpair *new_kv = malloc(kv_size);//struct kvpair));
   if(NEW == NULL || new_kv == NULL) return -1;
 
-  memmove(&new_kv->key, kv->key, kv->keysz);
-  memmove(&new_kv->key+kv->keysz, kv->value, kv->valuesz);
-  memmove(&new_kv->key+kv->keysz+kv->valuesz, &kv->keysz, sizeof(uint32_t));
-  memmove(&new_kv->key+kv->keysz+kv->valuesz+sizeof(uint32_t), &kv->valuesz, sizeof(uint32_t));
+  int addition = 0;
+  memmove(&new_kv+addition, kv->key, kv->keysz);
+  addition+=kv->keysz;
+  memmove(&new_kv+addition, kv->value, kv->valuesz);
+  addtion+=kv->valuesz;
+  memmove(&new_kv+addition, &kv->keysz, sizeof(uint32_t));
+  addtion+=sizeof(uint32_t);
+  memmove(&new_kv+addition, &kv->valuesz, sizeof(uint32_t));
 
   NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
