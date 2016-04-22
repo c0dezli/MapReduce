@@ -275,12 +275,13 @@ mr_finish(struct map_reduce *mr) {
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
-  int kv_size = kv->keysz + kv->valuesz;
+  // get the kv_size
+  int kv_size = kv->keysz + kv->valuesz + 2*sizeof(uint32_t);
 
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
   // first check if the buffer is overflow
-  while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {
+  while(mr->size[id] + kv_size >= MR_BUFFER_SIZE) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(mr->not_full, &mr->_lock) != 0)
       return -1; // wait failed
@@ -292,21 +293,9 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   NEW->kv = kv;     // NEED TO CHANGE (PUT KV INTO BUFFER)
 
   memcpy(mr->bufffer[id], kv->key, sizeof(&kv->key));
-  mr->size+=sizeof(&kv->key);
-  mr->count++;
-
   memcpy(mr->bufffer[id], kv->value, sizeof(&kv->value));
-  mr->size+=sizeof(&kv->value);
-  mr->count++;
- 
   memcpy(mr->bufffer[id], kv->keysz, sizeof(uint32_t));
-  mr->size+=sizeof(uint32_t);
-  mr->count++;
-
   memcpy(mr->bufffer[id], kv->valuesz, sizeof(uint32_t));
-  mr->size+=sizeof(uint32_t);
-  mr->count++;
-
  //=============================================
 
   NEW->next = mr->HEAD[id];
@@ -345,7 +334,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz;
+  // get the kv_size
+  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz + 2 * sizeof(uint32_t);
 
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
@@ -356,25 +346,11 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   // read from head
   //=======================================================
   kv = mr->HEAD[id]->kv;
- 
+
   memcpy(kv->key, mr->bufffer[id], sizeof(&kv->key));
-  mr->size+=sizeof(&kv->key);
-  mr->count++;
-
   memcpy(kv->value, mr->bufffer[id], sizeof(&kv->value));
-  mr->size+=sizeof(&kv->value);
-  mr->count++;
- 
   memcpy(kv->keysz, mr->bufffer[id], sizeof(uint32_t));
-  mr->size+=sizeof(uint32_t);
-  mr->count++;
-
   memcpy(kv->valuesz, mr->bufffer[id], sizeof(uint32_t));
-  mr->size+=sizeof(uint32_t);
-  mr->count++;
-
-
- // NEED memcpy
   //=======================================================
 
   // remove head
