@@ -336,12 +336,13 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
+  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz);
   if(kv == NULL) return -1;
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // make surew there is value to consume
-  while(mr->count[id] == 0) {
+  while(mr->count[id] == 0 || mr->HEAD[id] == NULL) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
@@ -349,9 +350,9 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   // read from head
   int kv_size = 0;
   memmove(kv->key, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->keysz);
-  kv_size+=kv->keysz;
+  kv_size+=mr->HEAD[id]->keysz;
   memmove(kv->value, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->valuesz);   //TODO
-  kv_size+=kv->valuesz;
+  kv_size+=mr->HEAD[id]->valuesz;
   memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
   kv_size+=sizeof(uint32_t);
   memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
