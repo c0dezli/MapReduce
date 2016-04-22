@@ -291,12 +291,16 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // create new node
   struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
   struct kvpair *new_kv = malloc(sizeof(struct kvpair));
-  //=============================================
-  memmove(new_kv->key, kv->key, kv->keysz);
-  memmove(new_kv->value, kv->value, kv->valuesz);
-  memmove(&new_kv->keysz, &kv->keysz, sizeof(uint32_t));
-  memmove(&new_kv->valuesz, &kv->valuesz, sizeof(uint32_t));
- //=============================================
+
+  int addition = 0;
+  memmove(&new_kv, &kv->keysz, sizeof(uint32_t));
+  addition+=sizeof(uint32_t);
+  memmove(&new_kv + addition, &kv->valuesz, sizeof(uint32_t));
+  addition+=sizeof(uint32_t);
+  memmove(&new_kv + addition, kv->key, kv->keysz);
+  addition+=kv->keysz;
+  memmove(&new_kv + addtion, kv->value, kv->valuesz);
+
   NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
 
