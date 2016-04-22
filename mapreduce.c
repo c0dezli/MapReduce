@@ -204,8 +204,14 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
 void
 mr_destroy(struct map_reduce *mr) {
+  for(int i=0; i<mr->n_threads; i++){
+    free(mr->buffer_list[i]);
+    free(mr->HEAD[i]);
+    free(mr->TAIL[i]);
+  }
   free(mr->HEAD);
   free(mr->TAIL);
+
   free(mr->buffer_list);
   free(mr->count);
   free(mr->size);
