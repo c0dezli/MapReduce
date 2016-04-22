@@ -126,25 +126,21 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->size = calloc(threads, sizeof(int));
    if(mr->size == NULL) return NULL;
 
-   //
+   // create buffer list
    mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
    mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
    if(mr->HEAD == NULL || mr->TAIL == NULL) return NULL;
 
+   for(int i=0; i<threads; i++){
+     //buffer_list[i] = calloc(MR_BUFFER_SIZE, sizeof(char));
+     mr->HEAD[i] = malloc(MR_BUFFER_SIZE);
 
-   // create a buffer list (can contain threads pointers)
-   mr->buffer_list = malloc(sizeof(struct buffer_node*) * threads);
-   if(mr->buffer_list != NULL) {
-     for(int i=0; i<threads; i++){
-       //buffer_list[i] = calloc(MR_BUFFER_SIZE, sizeof(char));
-       mr->buffer_list[i] = malloc(MR_BUFFER_SIZE);
-
-       mr->HEAD[i] = mr->TAIL[i] = mr->buffer_list[i];
-       // make a cycle
-       mr->HEAD[i]->next = mr->TAIL[i];
-       mr->TAIL[i]->next = mr->HEAD[i];
-     }
+     mr->TAIL[i] = mr->HEAD[i];
+     // make a cycle
+     mr->HEAD[i]->next = mr->TAIL[i];
+     mr->TAIL[i]->next = mr->HEAD[i];
    }
+
 
 	 return mr;
 }
@@ -195,9 +191,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    free(mr->buffer_list[i]);
+    free(mr->TAIL[i]);
+    free(mr->HEAD[i]);
   }
-  free(mr->buffer_list);
   free(mr->HEAD);
   free(mr->TAIL);
   free(mr->not_full);
