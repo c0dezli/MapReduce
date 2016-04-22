@@ -64,7 +64,7 @@ http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-mall
 */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-   mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
+   struct map_reduce *mr = malloc (sizeof(struct map_reduce));
 
    if(mr == 0) {  // Check Success
      free(mr);
@@ -83,8 +83,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // Threads
    mr->map_threads = malloc(threads * sizeof(pthread_t));
-   mr->reduce_thread =  malloc(sizeof(pthread_t));
-
+   
    mr->mapfn_status = malloc(threads * sizeof(int));
    mr->reducefn_status = -1;
 
@@ -184,7 +183,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->infd_failed);
 
   free(mr->map_threads);
-  free(mr->reduce_thread);
 
   free(mr->mapfn_status);
   free(mr->map_return_values);
@@ -214,7 +212,7 @@ mr_finish(struct map_reduce *mr) {
   mr->map_thread_count = 0;
 
   if(mr->reducefn_status == 0) // success
-    pthread_join(mr->reduce_thread, NULL) // failed
+    pthread_join(mr->reduce_thread, NULL); // failed
 
   // close fd
   for(int i=0; i<(mr->n_threads); i++)
@@ -222,11 +220,11 @@ mr_finish(struct map_reduce *mr) {
   mr->outfd_failed = close(mr->outfd);
 
   // check if success
-  if (mr->outfd_failed == -1 || (int)(intptr_t)reduce_return_value != 0)
+  if (mr->outfd_failed == -1 || mr->reducefn_status != 0)
     return -1;
 
   for(int i=0; i<(mr->n_threads); i++){
-      if (mr->infd_failed[i] == -1 || (int)(intptr_t)mr->map_return_values[i] != 0)
+      if (mr->infd_failed[i] == -1 || mr->mapfn_status[i] != 0)
         return -1;  // failed
   }
 
