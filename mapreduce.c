@@ -206,6 +206,8 @@ mr_destroy(struct map_reduce *mr) {
       free(mr->buffer_list[i].next);
   }
   free(mr->buffer_list);
+  free(mr->HEAD);
+  free(mr->TAIL);
   free(mr->count);
   free(mr->size);
   free(mr->infd_failed);
