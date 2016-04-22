@@ -278,23 +278,6 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
   int kv_size = kv->keysz + kv->valuesz;
 
-<<<<<<< Updated upstream
-  pthread_mutex_lock(&mr->_lock);
-  while(mr->size == MR_BUFFER_SIZE) //from the Lecture 30,31 demo code
-      pthread_cond_wait (mr->not_full, &mr->_lock);
-
-  if(mr->size < MR_BUFFER_SIZE){
-    mr->buffer[mr->count] = my_kv;
-    mr->size+=kv_size;
-    mr->count++;
-  }
-
-  pthread_cond_signal (mr->not_empty);//from demo code
-  pthread_mutex_unlock(&mr->_lock);
-	//	kv->key;
-	//	kv->value;
-	//	kv->keysz + kv->valuesz = total size;
-=======
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
   while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {                  // wait
@@ -316,8 +299,9 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   mr->size[id] += kv_size;
   mr->count[id] ++;
 
+  pthread_cond_signal (mr->not_empty);//from demo code
   if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
->>>>>>> Stashed changes
+
 	return 1; // successful
 }
 
@@ -345,27 +329,6 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
-<<<<<<< Updated upstream
-//This allows write to compile:  const void *buf;
-
-  pthread_mutex_lock(&mr->_lock);
-  while(mr->size == 0); //from lecture demo code
-    pthread_cond_wait(mr->not_empty, &mr->_lock);
-
-  if(mr->count == 0) return 0;
-  else {
-
-//    memset(mr, 0, 1);//I don't know if this will work
-                             //http://stackoverflow.com/questions/5844242/valgrind-yells-about-an-uninitialised-bytes
-    write(mr->outfd, &mr->buffer[mr->count], 1);
-//    write(mr->outfd, &buf, 1); // write to file
-    mr->size -= kv_size;
-    mr->count--;
-  }
-  pthread_cond_signal (mr->not_full);//from demo code
-  pthread_mutex_unlock(&mr->_lock);
-  //	kv->key;
-=======
   while(mr->count[id] == 0) {                  // wait
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(&mr->not_empty, &mr->lock) != 0) return -1; // wait failed
@@ -381,8 +344,8 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   mr->size[id] -= kvsize;
   mr->count[id]--;
 
+  pthread_cond_signal (mr->not_full);//from demo code
   if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
 
->>>>>>> Stashed changes
 	return 1; // successful
 }
