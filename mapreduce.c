@@ -266,8 +266,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   if(new_node == NULL) return -1;
   new_node->key = malloc(kv->keysz);
   new_node->value = malloc(kv->valuesz);
-  new_node->keysz = malloc(sizeof(unint32_t));
-  new_node->valuesz = malloc(sizeof(unint32_t));
+  new_node->keysz = malloc(sizeof(uint32_t));
+  new_node->valuesz = malloc(sizeof(uint32_t));
 
   memmove(new_node->key, kv->key, kv->keysz);
   memmove(new_node->value, kv->value, kv->valuesz);
