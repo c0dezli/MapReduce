@@ -34,7 +34,9 @@ struct args_helper{									// The args for map function
 };
 
 struct buffer_node{
-  struct kvpair *kv;
+  void *kv;
+  uint32_t keysz;
+	uint32_t valuesz;
   struct buffer_node *next;
 };
 
@@ -279,7 +281,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 
   // create new node
   struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
-  struct kvpair *new_kv = malloc(kv_size);//struct kvpair));
+  void *new_kv = malloc(kv_size);//struct kvpair));
   if(NEW == NULL || new_kv == NULL) return -1;
 
   int addition = 0;
@@ -292,6 +294,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   memmove(&new_kv+addition, &kv->valuesz, sizeof(uint32_t));
 
   NEW->kv = new_kv;
+  NEW->keysz = kv->keysz;
+  NEW->valuesz = kv->valuesz;
   NEW->next = mr->HEAD[id];
 
   // insert into the tail
@@ -304,7 +308,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   mr->count[id]++;
 
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
-  printf("ID is %d, Count is %d, Valuesz is %d\n", id, mr->count[id], NEW->kv->valuesz);
+  printf("ID is %d, Count is %d, NEW->valuesz is %d, mr->TAIL[id]->valuesz is %d\n", id, mr->count[id], NEW->valuesz, mr->TAIL[id]->valuesz);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
@@ -344,9 +348,9 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   // read from head
   int kv_size = 0;
-  memmove(kv->key, &mr->HEAD[id]->kv+kv_size, kv->keysz);
+  memmove(kv->key, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->keysz);
   kv_size+=kv->keysz;
-  memmove(kv->value, &mr->HEAD[id]->kv+kv_size, kv->valuesz);   //TODO
+  memmove(kv->value, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->valuesz);   //TODO
   kv_size+=kv->valuesz;
   memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
   kv_size+=sizeof(uint32_t);
@@ -355,7 +359,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
-  mr->TAIL[id] = mr->HEAD[id];
+  mr->TAIL[id]->next = mr->HEAD[id];
 
   // decrease size
   mr->size[id] -= kv_size;
