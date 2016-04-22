@@ -219,7 +219,7 @@ mr_finish(struct map_reduce *mr) {
         pthread_join(mr->map_threads[i], &mr->map_return_values[i]); // wait threads to finish
       }
   }
-  mr->map_thread_count == 0;
+  mr->map_thread_count = 0;
 
   if(mr->reduce_thread_failed == 0) // success
     if(pthread_join(mr->reduce_thread, &reduce_return_value)) // failed
