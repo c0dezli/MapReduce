@@ -347,11 +347,11 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   int addition = 0;
   memmove(kv->key, &mr->HEAD[id]->kv+addition, kv->keysz);
   addition+=kv->keysz;
-  memmove(kv->value, &mr->HEAD[id]->kv kv->valuesz);
+  memmove(kv->value, &mr->HEAD[id]->kv+addition, kv->valuesz);
   addition+=kv->valuesz;
-  memmove(&kv->keysz, &mr->HEAD[id]->kv, sizeof(uint32_t));
+  memmove(&kv->keysz, &mr->HEAD[id]->kv+addition, sizeof(uint32_t));
   addition+=sizeof(uint32_t);
-  memmove(&kv->valuesz, &mr->HEAD[id]->kv, sizeof(uint32_t));
+  memmove(&kv->valuesz, &mr->HEAD[id]->kv+addition, sizeof(uint32_t));
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
