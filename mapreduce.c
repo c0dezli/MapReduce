@@ -277,10 +277,10 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 
   printf("%s", (char *)kv->key);
 
-  memmove(new_kv->key, kv->key, kv->keysz);
-  memmove(mr->TAIL[id]->kv->value, kv->value, kv->valuesz);
-  memmove(&mr->TAIL[id]->kv->keysz, &kv->keysz, sizeof(uint32_t));
-  memmove(&mr->TAIL[id]->kv->valuesz, &kv->valuesz, sizeof(uint32_t));
+  memmove(&new_kv->key, kv->key, kv->keysz);
+  memmove(&new_kv->value, kv->value, kv->valuesz);
+  memmove(&new_kv->keysz, &kv->keysz, sizeof(uint32_t));
+  memmove(&new_kv->valuesz, &kv->valuesz, sizeof(uint32_t));
 
   NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
