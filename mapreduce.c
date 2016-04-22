@@ -347,16 +347,16 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  //if(kv == NULL) return -1;
+  if(kv == NULL) return -1;
 
-  //if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
-  pthread_mutex_lock(&mr->_lock[id]);
+  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
+  //pthread_mutex_lock(&mr->_lock[id]);
 
   // make surew there is value to consume
   while(mr->count[id] == 0 || mr->HEAD[id] == NULL) {
-    //if(mr->map_return_values[id]!= 0) return 0; // map function call failed
-    //if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
-    pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
+    if(mr->map_return_values[id] == -1) return 0; // map function finished
+    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
+    //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
 
@@ -380,8 +380,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   mr->count[id]--;
 
   pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
-  //if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
-  pthread_mutex_unlock(&mr->_lock[id]); // unlock failed
+  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
   printf("ID is %d, Count is %d, mr->size[id] is %d\n", id, mr->count[id], mr->size[id]);
 
