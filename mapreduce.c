@@ -63,7 +63,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    struct map_reduce *mr = malloc (sizeof(struct map_reduce));
    if(mr == NULL) return NULL;
 
-   pthread_mutex_init(&mr->_lock, NULL);
    mr->map = map;// Save the function inside the sturcture
    mr->reduce = reduce;
    mr->n_threads = threads;// Save the static data
@@ -103,12 +102,20 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
      for(int i=0; i<threads; i++)
        mr->infd_failed[i] = -1;
    }
+   mr->_lock = malloc(threads * sizeof(pthread_mutex_t));
+   if (mr->lock == NULL) return NULL;
 
    mr->map_cv = malloc(threads * sizeof(pthread_cond_t));
    if(mr->map_cv == NULL) return NULL;
 
    mr->reduce_cv = malloc(threads * sizeof(pthread_cond_t));
    if(mr->reduce_cv == NULL) return NULL;
+
+   for (int i=0; i<threads; i++) {
+       pthread_mutex_init(mr->_lock[i], NULL);
+       pthread_cond_init(mr->map_cv[i], NULL);
+       pthread_cond_init(mr->reduce_cv[i], NULL);
+   }
 
    mr->count = calloc(threads, sizeof(int));
    if(mr->count == NULL) return NULL;
@@ -261,12 +268,12 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // get the kv_size
   int kv_size = kv->keysz + kv->valuesz + 2*sizeof(uint32_t);
 
-  if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
+  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // first check if the buffer is overflow
   while(mr->size[id] + kv_size >= MR_BUFFER_SIZE) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock) != 0) return -1; // wait failed
+    if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
   // create new node
@@ -297,7 +304,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   printf("ID is %d, Count is %d\n", id, mr->count[id]);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
-  if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
+  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
 	return 1; // successful
 }
@@ -324,12 +331,12 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
   if(kv == NULL) return -1;
 
-  if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
+  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // make surew there is value to consume
   while(mr->count[id] == 0) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock) != 0) return -1; // wait failed
+    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
   // get the kv_size
@@ -356,7 +363,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
 
   pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
-  if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
+  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
 	return 1; // successful
 }
