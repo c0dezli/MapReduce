@@ -203,9 +203,9 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=mr->n_threads; i<0; i--){
-    while(mr->buffer_list[i].next != NULL)
-      free(mr->buffer_list[i].next->kv);
-      free(mr->buffer_list[i].next);
+    while(mr->buffer_list[i]->next != NULL)
+      free(mr->buffer_list[i]->next->kv);
+      free(mr->buffer_list[i]->next);
   }
   free(mr->buffer_list);
   free(mr->HEAD);
