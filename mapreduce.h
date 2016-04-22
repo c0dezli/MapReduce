@@ -81,8 +81,7 @@ struct map_reduce {
 
 	void **map_return_values;
 
-	struct buffer_node **buffer_list,	//set up buffer
-										 **HEAD, **TAIL; // a list of HEAD and TAIL pointers
+	struct buffer_node **HEAD, **TAIL; // a list of HEAD and TAIL pointers
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
