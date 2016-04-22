@@ -270,7 +270,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // allocate TAIL->next
-  mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
+  //mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
   struct buffer_node *new_node = mr->TAIL[id]->next;
   // allocate TAIL->next->kv
   new_node->kv = malloc(kv_size);
