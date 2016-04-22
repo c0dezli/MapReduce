@@ -77,7 +77,7 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	struct buffer_node **buffer_list,	//set up buffer
+	struct buffer_node *buffer_list,	//set up buffer
 										 **HEAD, **TAIL;
 
 	map_fn map;												// Declear the function pointers
