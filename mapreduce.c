@@ -354,10 +354,10 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   // make surew there is value to consume
   while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
-    //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
 
-  if((int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
+  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0)
+    return 0; // no more pairs
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
 
   // read from head
