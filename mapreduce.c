@@ -101,7 +101,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->map_return_values = malloc(threads * sizeof(void*));
       if (mr->map_return_values == NULL) return NULL;
       else {
-        for (i = 0; i < threads; i++)
+        for (int i=0; i<threads; i++)
           mr->map_return_values[i] = (void*)(intptr_t)-1;
       }
 
