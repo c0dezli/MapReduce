@@ -285,9 +285,27 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
       pthread_cond_wait (mr->not_full, &mr->_lock);
 
   if(mr->size < MR_BUFFER_SIZE){
-    mr->buffer[mr->count] = my_kv;
+   // mr->buffer[mr->count] = my_kv;
+   // mr->size+=kv_size;
+   // mr->count++;
+
+//memcpy (void *destination, const void *source of data to be copied, size_t number of bytes to be copied)
+
+    memcpy(mr->bufffer[id], kv->key, sizeof(&kv->key));
     mr->size+=kv_size;
     mr->count++;
+   
+    memcpy(mr->bufffer[id], kv->value, sizeof(&kv->key));
+    mr->size+=kv_size;
+    mr->count++;
+    
+    memcpy(mr->bufffer[id], kv->keyz, sizeof(&kv->key));
+    mr->size+=kv_size;
+    mr->count++;    
+   
+     memcpy(mr->bufffer[id], kv->valuesz, sizeof(&kv->key));
+    mr->size+=kv_size;
+    mr->count++;  
   }
 
   pthread_cond_signal (mr->not_empty);//from demo code
