@@ -33,6 +33,11 @@ struct args_helper{									// The args for map function
  reduce_fn reduce;
 };
 
+struct buffer_node{
+  struct kvpair *kv;
+  struct buffer_node *next;
+}
+
 /*	Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* map_args) {
@@ -53,19 +58,106 @@ static void *reduce_wrapper(void* reduce_args) {
   //return (void *)reduce_args;
 }
 
-/**
- * Begins a multithreaded MapReduce operation.  This operation will process data
- * from the given input file and write the result to the given output file.
- *
- * mr       Pointer to the instance to start
- * inpath   Path to the file from which input is read.  The framework should
- *          make sure that each Map thread gets an independent file descriptor
- *          for this file.
- * outpath  Path to the file to which output is written.
- *
- * Returns 0 if the operation was started successfuly and nonzero if there was
- * an error.
- */
+struct map_reduce*
+mr_create(map_fn map, reduce_fn reduce, int threads) {
+   // http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
+
+   struct map_reduce *mr = malloc (sizeof(struct map_reduce));
+   if(mr == NULL) return NULL;
+
+   pthread_mutex_init(&mr->_lock, NULL);
+   mr->map = map;// Save the function inside the sturcture
+   mr->reduce = reduce;
+   mr->n_threads = threads;// Save the static data
+
+
+   // give meaningless init value
+   mr->outfd = -1;
+   mr->reducefn_failed = -1;
+   mr->reduce_thread_failed = -1;
+   mr->outfd_failed = -1;
+
+   mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
+   if(mr->args == NULL) {
+     free(mr);
+     return NULL;
+   }
+
+   mr->infd = malloc (sizeof(int) * threads);
+   if(mr->infd == NULL) {
+     free(mr->args);
+     free(mr);
+     return NULL;
+   }
+
+   mr->map_threads = malloc(sizeof(pthread_t) * threads);
+   if(mr->map_threads == NULL) {
+     free(mr->infd);
+     free(mr->args);
+     free(mr);
+     return NULL;
+   }
+
+   mr->mapfn_failed = malloc(sizeof(int) * threads);
+   if(mr->mapfn_failed == NULL) {
+     free(mr->map_threads);
+     free(mr->infd);
+     free(mr->args);
+     free(mr);
+     return NULL;
+   } else {
+     for(int i=0; i<threads; i++)
+       mr->mapfn_failed[i] = -1;
+   }
+
+   mr->map_thread_failed = malloc(sizeof(int) * threads);
+   if(mr->map_thread_failed == NULL) {
+     free(mr->mapfn_failed);
+     free(mr->map_threads);
+     free(mr->infd);
+     free(mr->args);
+     free(mr);
+     return NULL;
+   } else {
+     for(int i=0; i<threads; i++)
+       mr->map_thread_failed[i] = -1;
+   }
+
+   mr->infd_failed = malloc(sizeof(int) * threads);
+   if(mr->infd_failed == NULL) {
+     free(mr->map_thread_failed);
+     free(mr->mapfn_failed);
+     free(mr->map_threads);
+     free(mr->infd);
+     free(mr->args);
+     free(mr);
+     return NULL;
+   } else {
+     for(int i=0; i<threads; i++)
+       mr->infd_failed[i] = -1;
+   }
+
+   mr->count = calloc(threads, sizeof(int));
+   mr->size = calloc(threads, sizeof(int));
+
+   mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
+   mr->CURR = malloc(sizeof(struct buffer_node *) * threads);
+   mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
+
+   mr->buffer_list = malloc(sizeof(struct buffer_node *) * threads);
+   if(mr->buffer_list != NULL) {
+     for(int i=0; i<threads; i++){
+       mr->buffer_list[i] = malloc (sizeof(struct buffer_node));
+       mr->HEAD[i] = mr->TAIL[i] =  mr->buffer_list[i];
+       mr->TAIL[i]->next = mr->HEAD[i];
+     }
+   }
+
+
+
+	 return mr;
+}
+
 int
 mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
@@ -109,102 +201,13 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	return 0;
 }
 
-struct map_reduce*
-mr_create(map_fn map, reduce_fn reduce, int threads) {
-    // http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
-
-    struct map_reduce *mr = malloc (sizeof(struct map_reduce));
-    if(mr == NULL) return NULL;
-
-    pthread_mutex_init(&mr->_lock, NULL);
-		mr->map = map;// Save the function inside the sturcture
-		mr->reduce = reduce;
-		mr->n_threads = threads;// Save the static data
-    mr->count = 0;
-    mr->size = 0;
-
-    // give meaningless init value
-    mr->outfd = -1;
-    mr->reducefn_failed = -1;
-    mr->reduce_thread_failed = -1;
-    mr->outfd_failed = -1;
-
-    mr->buffer = malloc (MR_BUFFER_SIZE); // Create buffer
-    if (mr->buffer == NULL) {
-      free(mr);
-      return NULL;
-    }
-    mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
-    if(mr->args == NULL) {
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    }
-
-    mr->infd = malloc (sizeof(int) * threads);
-    if(mr->infd == NULL) {
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    }
-
-    mr->map_threads = malloc(sizeof(pthread_t) * threads);
-    if(mr->map_threads == NULL) {
-      free(mr->infd);
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    }
-
-    mr->mapfn_failed = malloc(sizeof(int) * threads);
-    if(mr->mapfn_failed == NULL) {
-      free(mr->map_threads);
-      free(mr->infd);
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    } else {
-      for(int i=0; i<threads; i++)
-        mr->mapfn_failed[i] = -1;
-    }
-
-    mr->map_thread_failed = malloc(sizeof(int) * threads);
-    if(mr->map_thread_failed == NULL) {
-      free(mr->mapfn_failed);
-      free(mr->map_threads);
-      free(mr->infd);
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    } else {
-      for(int i=0; i<threads; i++)
-        mr->map_thread_failed[i] = -1;
-    }
-
-    mr->infd_failed = malloc(sizeof(int) * threads);
-    if(mr->infd_failed == NULL) {
-      free(mr->map_thread_failed);
-      free(mr->mapfn_failed);
-      free(mr->map_threads);
-      free(mr->infd);
-      free(mr->args);
-      free(mr->buffer);
-      free(mr);
-      return NULL;
-    } else {
-      for(int i=0; i<threads; i++)
-        mr->infd_failed[i] = -1;
-    }
-
-		return mr;
-}
-
 void
 mr_destroy(struct map_reduce *mr) {
+  free(mr->HEAD);
+  free(mr->TAIL);
+  free(mr->buffer_list);
+  free(mr->count);
+  free(mr->size);
   free(mr->infd_failed);
   free(mr->map_thread_failed);
   free(mr->mapfn_failed);
@@ -273,16 +276,10 @@ mr_finish(struct map_reduce *mr) {
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
-  struct kvpair my_kv;
-  my_kv.key = kv->key;
-  my_kv.value = kv->value;
-  my_kv.keysz = kv->keysz;
-  my_kv.valuesz = kv->valuesz;
   int kv_size = kv->keysz + kv->valuesz;
 
-  pthread_mutex_lock(&mr->_lock);
-  while(mr->size == MR_BUFFER_SIZE) //from the Lecture 30,31 demo code
-      pthread_cond_wait (mr->not_full, &mr->_lock);
+  if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
+
 
   if(mr->size < MR_BUFFER_SIZE){
    // mr->buffer[mr->count] = my_kv;
@@ -306,15 +303,31 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
      memcpy(mr->bufffer[id], kv->valuesz, sizeof(&kv->key));
     mr->size+=kv_size;
     mr->count++;  
+
+  while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {                  // wait
+    if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
+    if(pthread_cond_wait(&mr->not_full, &mr->lock) != 0)
+      return -1; // wait failed
+
   }
 
+  // create new node
+  struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
+  NEW->kv = kv;
+  NEW->next = mr->HEAD[id];
+
+  // insert into the tail
+  mr->TAIL[id]->next = NEW;
+  mr->TAIL[id] = NEW;
+
+  // add the size
+  mr->size[id] += kv_size;
+  mr->count[id] ++;
+
   pthread_cond_signal (mr->not_empty);//from demo code
-  pthread_mutex_unlock(&mr->_lock);
-	//	kv->key;
-	//	kv->value;
-	//	kv->keysz + kv->valuesz = total size;
+  if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
+
 	return 1; // successful
-	return -1; // on error
 }
 
 /**
@@ -337,32 +350,27 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  struct kvpair my_kv;
-  my_kv.key = kv->key;
-  my_kv.value = kv->value;
-  my_kv.keysz = kv->keysz;
-  my_kv.valuesz = kv->valuesz;
-  int kv_size = kv->keysz + kv->valuesz;
+  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz;
 
-//This allows write to compile:  const void *buf;
+  if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
-  pthread_mutex_lock(&mr->_lock);
-  while(mr->size == 0); //from lecture demo code
-    pthread_cond_wait(mr->not_empty, &mr->_lock);
-
-  if(mr->count == 0) return 0;
-  else {
-
-//    memset(mr, 0, 1);//I don't know if this will work
-                             //http://stackoverflow.com/questions/5844242/valgrind-yells-about-an-uninitialised-bytes
-    write(mr->outfd, &mr->buffer[mr->count], 1);
-//    write(mr->outfd, &buf, 1); // write to file
-    mr->size -= kv_size;
-    mr->count--;
+  while(mr->count[id] == 0) {                  // wait
+    if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
+    if(pthread_cond_wait(&mr->not_empty, &mr->lock) != 0) return -1; // wait failed
   }
+  // read from head
+  kv = mr->HEAD[id]->kv;
+
+  // remove head
+  mr->HEAD[id] = mr->HEAD[id]->next;
+  mr->TAIL[id] = mr->HEAD[id];
+
+  // decrease size
+  mr->size[id] -= kvsize;
+  mr->count[id]--;
+
   pthread_cond_signal (mr->not_full);//from demo code
-  pthread_mutex_unlock(&mr->_lock);
-  //	kv->key;
+  if(pthread_mutex_unlock(&mr->_lock) != 0) return -1; // unlock failed
+
 	return 1; // successful
-	return -1; // on error
 }
