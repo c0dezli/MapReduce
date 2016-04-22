@@ -278,9 +278,9 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   memmove(&new_kv+addition, kv->key, kv->keysz);
   addition+=kv->keysz;
   memmove(&new_kv+addition, kv->value, kv->valuesz);
-  addtion+=kv->valuesz;
+  addition+=kv->valuesz;
   memmove(&new_kv+addition, &kv->keysz, sizeof(uint32_t));
-  addtion+=sizeof(uint32_t);
+  addition+=sizeof(uint32_t);
   memmove(&new_kv+addition, &kv->valuesz, sizeof(uint32_t));
 
   NEW->kv = new_kv;
