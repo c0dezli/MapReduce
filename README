@@ -23,9 +23,7 @@ mr_wordc
 
 We expect that with increasing threads, the program will run faster and then slower once there are too many threads. Also, the bigger the buffers are, the faster the program will execute.
 
-In addition to the 6 given functions and structure, our c program has 2 more structures, one for the wrapper functions and one for the buffer, which we implemented as a linked list. We have 2 extra functions, both are wrapper functions for map and reduce.
-
-The reason we used a linked list is because it's easier to keep track of where to produce and where to consume compared to an array.
+In addition to the 6 given functions and structure, our c program has 1 more structure for the wrapper functions. We have 2 extra functions, both are wrapper functions for map and reduce.
 
 Within the .h file's map_reduce structure, we put a lock, 2 conditional variables, the head and tail nodes to our linked list, informcation about the number and size of key values and file descriptors.
 
