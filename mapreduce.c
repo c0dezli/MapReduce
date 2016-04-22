@@ -266,7 +266,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // first check if the buffer is overflow
   while(mr->size[id] + kv_size >= MR_BUFFER_SIZE) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(mr->not_full, &mr->_lock) != 0) return -1; // wait failed
+    if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock) != 0) return -1; // wait failed
   }
 
   // create new node
@@ -324,7 +324,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   // make surew there is value to consume
   while(mr->count[id] == 0) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(mr->not_empty, &mr->_lock) != 0) return -1; // wait failed
+    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock) != 0) return -1; // wait failed
   }
 
   // get the kv_size
