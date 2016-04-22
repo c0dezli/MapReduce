@@ -350,9 +350,9 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
   //pthread_mutex_lock(&mr->_lock[id]);
-  if((int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
+  if((int)(intptr_t)mr->mapfn_failed[id] == 0) return 0; // no more pairs
   // make surew there is value to consume
-  while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
+  while(mr->count[id] <= 0 && (int)(intptr_t)mr->mapfn_failed[id] == -1) {
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
     //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
