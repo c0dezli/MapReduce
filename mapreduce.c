@@ -327,6 +327,11 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   //kv_size+=sizeof(uint32_t);
 
   // remove head
+  free(mr->HEAD[id]->key);
+  free(mr->HEAD[id]->value);
+  free(mr->HEAD[id]->keysz);
+  free(mr->HEAD[id]->valuesz);
+
   mr->HEAD[id] = mr->HEAD[id]->next;
   mr->TAIL[id]->next = mr->HEAD[id];
 
