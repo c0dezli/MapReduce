@@ -77,15 +77,15 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	struct buffer_node **buffer_list,
+	struct buffer_node **buffer_list,	//set up buffer
 										 **HEAD, **TAIL;
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
 
 	int n_threads,             				// Number of worker threads to use
-   		*count,                 				// counts of kv pairs in each buffer
-			*size,													// bytes of kv pairs in each buffer
+   		*count,                 			// counts of kv pairs in each buffer
+			*size,												// bytes of kv pairs in each buffer
 			*infd, outfd,							  	// File discripter
 			*infd_failed, outfd_failed,
 			*map_thread_failed,
@@ -208,4 +208,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif

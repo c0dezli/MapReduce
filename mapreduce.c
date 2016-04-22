@@ -215,7 +215,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->map_threads);
   free(mr->infd);
   free(mr->args);
-  free(mr->buffer);
   free(mr);
 }
 
@@ -256,7 +255,6 @@ mr_finish(struct map_reduce *mr) {
 
     return 0; //success
   //check array
-  //check pthread join
 }
 
 /**
@@ -284,7 +282,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // first check if the buffer is overflow
   while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(&mr->not_full, &mr->_lock) != 0)
+    if(pthread_cond_wait(mr->not_full, &mr->_lock) != 0)
       return -1; // wait failed
   }
 
@@ -353,7 +351,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   while(mr->count[id] == 0) {                  // wait
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
-    if(pthread_cond_wait(&mr->not_empty, &mr->_lock) != 0) return -1; // wait failed
+    if(pthread_cond_wait(mr->not_empty, &mr->_lock) != 0) return -1; // wait failed
   }
   // read from head
   //=======================================================
