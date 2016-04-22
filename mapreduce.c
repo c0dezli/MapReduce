@@ -210,16 +210,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr);
 }
 
-/**
- * Blocks until the entire MapReduce operation is complete.  When this function
- * returns, you are guaranteeing to the caller that all Map and Reduce threads
- * have completed.
- *
- * mr  Pointer to the instance to wait for
- *
- * Returns 0 if every Map and Reduce function returned 0 (success), and nonzero
- * if any of the Map or Reduce functions failed.
- */
 int
 mr_finish(struct map_reduce *mr) {
 
@@ -280,7 +270,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // allocate TAIL->next
-  struct buffer_node *new_node = mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
+  mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
+  struct buffer_node *new_node = mr->TAIL[id]->next;
   // allocate TAIL->next->kv
   new_node->kv = malloc(kv_size);
 
