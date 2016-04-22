@@ -77,7 +77,7 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	struct buffer_node **buffer_list,	//set up buffer
+	struct buffer_node *buffer_list,	//set up buffer
 										 **HEAD, **TAIL;
 
 	map_fn map;												// Declear the function pointers
@@ -208,4 +208,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif

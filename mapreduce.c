@@ -70,7 +70,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->reduce = reduce;
    mr->n_threads = threads;// Save the static data
 
-
    // give meaningless init value
    mr->outfd = -1;
    mr->reducefn_failed = -1;
@@ -201,15 +200,11 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 
 void
 mr_destroy(struct map_reduce *mr) {
-  for(int i=0; i<mr->n_threads; i++){
+  for(int i=mr->n_threads; i<0; i--){
     free(mr->buffer_list[i]);
     free(mr->HEAD[i]);
     free(mr->TAIL[i]);
   }
-  // free(mr->HEAD);
-  // free(mr->TAIL);
-  //
-  // free(mr->buffer_list);
   free(mr->count);
   free(mr->size);
   free(mr->infd_failed);
