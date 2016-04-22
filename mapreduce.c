@@ -289,7 +289,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // create new node
-  struct buffer_node *NEW = malloc(sizeof(struct buffer_node
+  struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
   struct kvpair *new_kv = malloc(sizeof(struct kvpair));
   //=============================================
   memcpy(new_kv->key, kv->key, kv->keysz);
