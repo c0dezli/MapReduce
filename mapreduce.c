@@ -26,13 +26,15 @@
 /* Size of shared memory buffers */
 #define MR_BUFFER_SIZE 1024
 
-struct args_helper{									// The args for map function
+// The args for map function
+struct args_helper{
  struct map_reduce *mr;
  int infd, outfd, nmaps, id;
  map_fn map;
  reduce_fn reduce;
 };
 
+// The node struct for Linked buffer list
 struct buffer_node{
   void *kv;
   uint32_t keysz;
@@ -64,7 +66,7 @@ http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-mall
 */
 struct map_reduce*
 mr_create(map_fn map, reduce_fn reduce, int threads) {
-   mr = (struct map_reduce *) malloc (sizeof(struct map_reduce));
+   struct map_reduce *mr = malloc (sizeof(struct map_reduce));
 
    if(mr == 0) {  // Check Success
      free(mr);
@@ -83,7 +85,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // Threads
    mr->map_threads = malloc(threads * sizeof(pthread_t));
-   mr->reduce_thread =  malloc(sizeof(pthread_t));
 
    mr->mapfn_status = malloc(threads * sizeof(int));
    mr->reducefn_status = -1;
@@ -187,7 +188,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->infd_failed);
 
   free(mr->map_threads);
-  free(mr->reduce_thread);
 
   free(mr->mapfn_status);
   free(mr->map_return_values);
@@ -207,11 +207,9 @@ mr_destroy(struct map_reduce *mr) {
 int
 mr_finish(struct map_reduce *mr) {
 
-  void *reduce_return_value;
-
   // Close Threads
   for(int i=0; i<(mr->n_threads); i++) {
-    if(pthread_join(mr->mappers[i], NULL)) {
+    if(pthread_join(mr->map_threads[i], NULL)) {
       perror("Failed to wait a map thead end.\n");
       return -1;
     }
@@ -230,12 +228,10 @@ mr_finish(struct map_reduce *mr) {
 
   // Check
   for(int i=0; i<(mr->n_threads); i++) {
-
     if (mr->outfd_failed   == -1 ||
+        reducefn_status    !=  0 ||
         mr->infd_failed[i] == -1 ||
-        reducefn_status    != 0  ||
-        mapfn_status[i]    != 0   )
-
+        mapfn_status[i]    !=  0  )
       return -1;
   }
 
@@ -293,8 +289,6 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  if(kv == NULL) {printf("kv==NULL in produce\n"); return -1;}
-
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // make surewthere is value to consume
