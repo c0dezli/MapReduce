@@ -346,43 +346,43 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  int return_value = -1;
   if(kv == NULL) return -1;
 
-  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return_value =  -1; // lock failed
+  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
   //pthread_mutex_lock(&mr->_lock[id]);
 
   // make surew there is value to consume
   while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
-    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return_value =  -1; // wait failed
+    if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
+    //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
 
+  if((int)(intptr_t)mr->map_return_values[id] == -1) return 0; // no more pairs
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
-  if(mr->count[id]){
-    // read from head
-    int kv_size = 0;
-    memmove(kv->key, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->keysz);
-    kv_size+=mr->HEAD[id]->keysz;
-    memmove(kv->value, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->valuesz);   //TODO
-    kv_size+=mr->HEAD[id]->valuesz;
-    memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-    kv_size+=sizeof(uint32_t);
-    memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-    kv_size+=sizeof(uint32_t);
 
-    // remove head
-    mr->HEAD[id] = mr->HEAD[id]->next;
-    mr->TAIL[id]->next = mr->HEAD[id];
+  // read from head
+  int kv_size = 0;
+  memmove(kv->key, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->keysz);
+  kv_size+=mr->HEAD[id]->keysz;
+  memmove(kv->value, &mr->HEAD[id]->kv+kv_size, mr->HEAD[id]->valuesz);   //TODO
+  kv_size+=mr->HEAD[id]->valuesz;
+  memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
+  kv_size+=sizeof(uint32_t);
+  memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
+  kv_size+=sizeof(uint32_t);
 
-    // decrease size
-    mr->size[id] -= kv_size;
-    mr->count[id]--;
-  } else if (((int)(intptr_t)mr->map_return_values[id]) == 0) return_value = 0;
+  // remove head
+  mr->HEAD[id] = mr->HEAD[id]->next;
+  mr->TAIL[id]->next = mr->HEAD[id];
+
+  // decrease size
+  mr->size[id] -= kv_size;
+  mr->count[id]--;
 
   pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
-  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return_value = -1; // unlock failed
+  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
   printf("ID is %d, Count is %d, mr->size[id] is %d\n", id, mr->count[id], mr->size[id]);
 
-	return return_value; // successful
+	return 1; // successful
 }
