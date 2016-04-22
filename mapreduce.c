@@ -289,15 +289,15 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // create new node
-  struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
-  NEW->kv = malloc(sizeof(struct kvpair));
+  struct buffer_node *NEW = malloc(sizeof(struct buffer_node
+  struct kvpair *new_kv = malloc(sizeof(struct kvpair));
   //=============================================
-  memcpy(NEW->kv->key, kv->key, kv->keysz);
-  memcpy(NEW->kv->value, kv->value, kv->valuesz);
-  memcpy(&NEW->kv->keysz, &kv->keysz, sizeof(uint32_t));
-  memcpy(&NEW->kv->valuesz, &kv->valuesz, sizeof(uint32_t));
+  memcpy(new_kv->key, kv->key, kv->keysz);
+  memcpy(new_kv->value, kv->value, kv->valuesz);
+  memcpy(&new_kv->keysz, &kv->keysz, sizeof(uint32_t));
+  memcpy(&new_kv->valuesz, &kv->valuesz, sizeof(uint32_t));
  //=============================================
-
+  NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
 
   // insert into the tail
