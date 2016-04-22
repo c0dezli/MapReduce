@@ -276,7 +276,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   memmove(&new_node->kv+offset, &kv->keysz, sizeof(uint32_t));
   offset+=sizeof(uint32_t);
   memmove(&new_node->kv+offset, &kv->valuesz, sizeof(uint32_t));
-  
+
   new_node->keysz = kv->keysz;
   new_node->valuesz = kv->valuesz;
 
@@ -291,7 +291,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
   printf("Produce: ID is %d, Count is %d,  mr->size[id] is %d, kv_size is %d\n", id, mr->count[id], mr->size[id], kv_size);
 
-  pthread_cond_signal (&mr->map_cv[id]);//from demo code
+  pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
 	return 1; // successful
@@ -309,8 +309,6 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
     //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
   if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
-
-
 
   // read from head
   int kv_size = 0;
@@ -331,7 +329,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   mr->size[id] -= kv_size;
   mr->count[id]--;
 
-  pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
+  pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
   printf("Consume: ID is %d, Count is %d, mr->size[id] is %d, kv_size is %d\n", id, mr->count[id], mr->size[id], kv_size);
