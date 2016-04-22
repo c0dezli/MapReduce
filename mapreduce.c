@@ -141,14 +141,15 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->size = calloc(threads, sizeof(int));
 
    mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
-   mr->CURR = malloc(sizeof(struct buffer_node *) * threads);
    mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
 
+   // create a buffer list (can contain threads pointers)
    mr->buffer_list = malloc(sizeof(struct buffer_node *) * threads);
    if(mr->buffer_list != NULL) {
      for(int i=0; i<threads; i++){
        mr->buffer_list[i] = malloc (sizeof(struct buffer_node));
-       mr->HEAD[i] = mr->TAIL[i] =  mr->buffer_list[i];
+       mr->HEAD[i] = mr->TAIL[i] = mr->buffer_list[i];
+       // link the tail to head
        mr->TAIL[i]->next = mr->HEAD[i];
      }
    }
@@ -280,40 +281,23 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 
   if(pthread_mutex_lock(&mr->_lock) != 0) return -1; // lock failed
 
-
-  if(mr->size < MR_BUFFER_SIZE){
-   // mr->buffer[mr->count] = my_kv;
-   // mr->size+=kv_size;
-   // mr->count++;
-
-//memcpy (void *destination, const void *source of data to be copied, size_t number of bytes to be copied)
-
-    memcpy(mr->bufffer[id], kv->key, sizeof(&kv->key));
-    mr->size+=kv_size;
-    mr->count++;
-   
-    memcpy(mr->bufffer[id], kv->value, sizeof(&kv->key));
-    mr->size+=kv_size;
-    mr->count++;
-    
-    memcpy(mr->bufffer[id], kv->keyz, sizeof(&kv->key));
-    mr->size+=kv_size;
-    mr->count++;    
-   
-     memcpy(mr->bufffer[id], kv->valuesz, sizeof(&kv->key));
-    mr->size+=kv_size;
-    mr->count++;  
-
-  while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {                  // wait
+  // first check if the buffer is overflow
+  while(mr->size[id]+kv_size >= MR_BUFFER_SIZE) {
     if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(&mr->not_full, &mr->lock) != 0)
       return -1; // wait failed
-
   }
 
   // create new node
   struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
-  NEW->kv = kv;
+  //=============================================
+  NEW->kv = kv;     // NEED TO CHANGE (PUT KV INTO BUFFER)
+
+  memcpy(mr->bufffer[id], kv->key, sizeof(&kv->key));
+  mr->size+=kv_size;
+  mr->count++;
+  //=============================================
+
   NEW->next = mr->HEAD[id];
 
   // insert into the tail
@@ -359,7 +343,10 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
     if(pthread_cond_wait(&mr->not_empty, &mr->lock) != 0) return -1; // wait failed
   }
   // read from head
+  //=======================================================
   kv = mr->HEAD[id]->kv;
+  // NEED memcpy
+  //=======================================================
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
