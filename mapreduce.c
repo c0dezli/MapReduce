@@ -281,9 +281,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   int kv_size = kv->keysz + kv->valuesz;
 
   pthread_mutex_lock(&mr->_lock);
-  //while(mr->count == MAX) //from the Lecture 30,31 demo code
-   //what is MAX? int MAX == MR_BUFFER_SIZE???
-   //pthread_cond_wait (&mr->notfull, &mr->_lock);
+  while(mr->size == MR_BUFFER_SIZE) //from the Lecture 30,31 demo code
+      pthread_cond_wait (mr->not_full, &mr->_lock);
 
   if(mr->size < MR_BUFFER_SIZE){
     mr->buffer[mr->count] = my_kv;
@@ -291,7 +290,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
     mr->count++;
   }
 
-  //pthread_cond_signal (&mr->_lock);//from demo code
+  pthread_cond_signal (mr->not_empty);//from demo code
   pthread_mutex_unlock(&mr->_lock);
 	//	kv->key;
 	//	kv->value;
@@ -330,8 +329,8 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 //This allows write to compile:  const void *buf;
 
   pthread_mutex_lock(&mr->_lock);
-  //while(mr->count ==0); //from lecture demo code
-    //pthread_cond_wait(&mr->notempty, &mr->_lock);
+  while(mr->size == 0); //from lecture demo code
+    pthread_cond_wait(mr->not_empty, &mr->_lock);
 
   if(mr->count == 0) return 0;
   else {
@@ -342,8 +341,8 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 //    write(mr->outfd, &buf, 1); // write to file
     mr->size -= kv_size;
     mr->count--;
-  //pthread_cond_signal (&mr->notfull);//from demo code
   }
+  pthread_cond_signal (mr->not_full);//from demo code
   pthread_mutex_unlock(&mr->_lock);
   //	kv->key;
 	return 1; // successful
