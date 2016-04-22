@@ -203,9 +203,11 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=mr->n_threads; i<0; i--){
-    while(mr->buffer_list[i]->next != NULL)
+    while(mr->buffer_list[i]->next != NULL){
       free(mr->buffer_list[i]->next->kv);
       free(mr->buffer_list[i]->next);
+    }
+    free(mr->buffer_list[i]);
   }
   free(mr->buffer_list);
   free(mr->HEAD);
@@ -350,7 +352,7 @@ int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
-  if(kv == NULL) return -1;
+  //if(kv == NULL) return -1;
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
@@ -382,7 +384,6 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
   printf("ID is %d, Count is %d\n", id, mr->count[id]);
-
 
 	return 1; // successful
 }
