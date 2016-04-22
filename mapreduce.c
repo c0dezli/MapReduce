@@ -297,13 +297,14 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   // insert into the tail
   mr->TAIL[id]->next = NEW;
   mr->TAIL[id] = NEW;
+  mr->TAIL[id]->next = mr->HEAD[id];
 
   // add the size
   mr->size[id] += kv_size;
   mr->count[id]++;
 
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
-  printf("ID is %d, Count is %d, Valuesz is %d\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz);
+  printf("ID is %d, Count is %d, Valuesz is %d\n", id, mr->count[id], NEW->kv->valuesz);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
