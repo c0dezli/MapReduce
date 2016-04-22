@@ -193,10 +193,10 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    free(mr->HEAD[i]->key);
-    free(mr->HEAD[i]->value);
-    free(mr->HEAD[i]->keysz);
-    free(mr->HEAD[i]->valuesz);
+    // free(mr->HEAD[i]->key);
+    // free(mr->HEAD[i]->value);
+    // free(mr->HEAD[i]->keysz);
+    // free(mr->HEAD[i]->valuesz);
     free(mr->HEAD[i]);
   }
   free(mr->HEAD);
@@ -307,7 +307,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   }
 
   // no more pairs
-  if(mr->count[id] <= 0 && mr->map_thread_count == 0){
+  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
     if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
     printf("DONE! Consume: ID = %d, no more pairs, return 0\n", id);
     return 0;
