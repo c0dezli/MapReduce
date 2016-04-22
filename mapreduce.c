@@ -203,11 +203,6 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    // while(mr->HEAD[i] != NULL){
-    //   free(mr->HEAD[i]->kv);
-    //   free(mr->HEAD[i]);
-    //   mr->HEAD[i] = mr->HEAD[i]->next;
-    // }
     free(mr->buffer_list[i]);
   }
   free(mr->buffer_list);
@@ -290,7 +285,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 
   // first check if the buffer is overflow
   while(mr->size[id] + kv_size >= MR_BUFFER_SIZE) {
-    if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
+    if(mr->map_return_values[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
@@ -354,15 +349,15 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
   if(kv == NULL) return -1;
 
-  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // make surew there is value to consume
   while(mr->count[id] == 0 || mr->HEAD[id] == NULL) {
-    if(mr->mapfn_failed[id]!= 0) return 0; // map function call failed
+    if(mr->map_return_values[id]!= 0) return 0; // map function call failed
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
+  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
 
   // read from head
   int kv_size = 0;
@@ -385,7 +380,8 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   pthread_cond_signal (&mr->reduce_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
-  printf("ID is %d, Count is %d\n", id, mr->count[id]);
+  printf("ID is %d, Count is %d, mr->size[id] is %d\n", id, mr->count[id], mr->size[id]);
+
 
 	return 1; // successful
 }
