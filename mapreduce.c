@@ -131,7 +131,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
 
    // create a buffer list (can contain threads pointers)
-   mr->buffer_list = malloc(sizeof(struct buffer_node) * threads);
+   mr->buffer_list = malloc(sizeof(struct buffer_node) * threads + MR_BUFFER_SIZE * threads);
    if(mr->buffer_list != NULL) {
      for(int i=0; i<threads; i++){
        mr->HEAD[i] = mr->TAIL[i] = &mr->buffer_list[i];
