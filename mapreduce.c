@@ -279,35 +279,30 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
     if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
-  // create new node
-  struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
-  void *new_kv = malloc(kv_size);//struct kvpair));
-  if(NEW == NULL || new_kv == NULL) return -1;
+  // allocate TAIL->next
+  mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
+  // allocate TAIL->next->kv
+  mr->TAIL[id]->next->kv = malloc(kv_size);
+  if(mr->TAIL[id]->next == NULL || mr->TAIL[id]->next->kv == NULL) return -1;
 
   int addition = 0;
-  memmove(&new_kv+addition, kv->key, kv->keysz);
+  memmove(&mr->TAIL[id]->next->kv+addition, kv->key, kv->keysz);
   addition+=kv->keysz;
-  memmove(&new_kv+addition, kv->value, kv->valuesz);
+  memmove(&mr->TAIL[id]->next->kv+addition, kv->value, kv->valuesz);
   addition+=kv->valuesz;
-  memmove(&new_kv+addition, &kv->keysz, sizeof(uint32_t));
+  memmove(&mr->TAIL[id]->next->kv+addition, &kv->keysz, sizeof(uint32_t));
   addition+=sizeof(uint32_t);
-  memmove(&new_kv+addition, &kv->valuesz, sizeof(uint32_t));
+  memmove(&mr->TAIL[id]->next->kv+addition, &kv->valuesz, sizeof(uint32_t));
 
-  NEW->kv = new_kv;
-  NEW->keysz = kv->keysz;
-  NEW->valuesz = kv->valuesz;
-  NEW->next = mr->HEAD[id];
+  mr->TAIL[id]->next->keysz = kv->keysz;
+  mr->TAIL[id]->next->valuesz = kv->valuesz;
 
-  // insert into the tail
-  if(mr->HEAD == mr->TAIL){
-    mr->TAIL[id] = NEW;
-    mr->TAIL[id]->next = NEW;
-    mr->TAIL[id]->next = mr->HEAD[id];
-  } else {
-    mr->TAIL[id]->next = NEW;
-    mr->TAIL[id] = NEW;
-    mr->TAIL[id]->next = mr->HEAD[id];
-  }
+  mr->TAIL[id]->next->next = mr->HEAD[id];
+
+  // change tail->next to tail
+  mr->TAIL[id] = mr->TAIL[id]->next;
+  mr->TAIL[id]->next = mr->HEAD[id];
+
   // add the size
   mr->size[id] += kv_size;
   mr->count[id]++;
