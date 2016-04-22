@@ -250,7 +250,6 @@ mr_finish(struct map_reduce *mr) {
   //check array
 }
 
-
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
@@ -294,7 +293,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   pthread_cond_signal (&mr->not_empty[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
 
-	return return_value;
+	return 1;
 }
 
 int
