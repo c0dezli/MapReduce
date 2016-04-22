@@ -292,10 +292,10 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   //=============================================
   // NEW->kv = kv;     // NEED TO CHANGE (PUT KV INTO BUFFER)
 
-  memcpy(NEW->kv->key, kv->key, kv->keysz);
-  memcpy(NEW->kv->value, kv->value, kv->valuesz);
-  memcpy(NEW->kv->keysz, kv->keysz, sizeof(uint32_t));
-  memcpy(NEW->kv->valuesz, kv->valuesz, sizeof(uint32_t));
+  memcpy(&NEW->kv->key, &kv->key, kv->keysz);
+  memcpy(&NEW->kv->value, &kv->value, kv->valuesz);
+  memcpy(&NEW->kv->keysz, &kv->keysz, sizeof(uint32_t));
+  memcpy(&NEW->kv->valuesz, &kv->valuesz, sizeof(uint32_t));
  //=============================================
 
   NEW->next = mr->HEAD[id];
@@ -347,10 +347,10 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   //=======================================================
   //kv = mr->HEAD[id]->kv;
 
-  memcpy(kv->key, mr->HEAD[id]->kv->key, mr->HEAD[id]->kv->keysz);
-  memcpy(kv->value, mr->HEAD[id]->kv->value, mr->HEAD[id]->kv->valuesz);
-  memcpy(kv->keysz, mr->HEAD[id]->kv->keysz, sizeof(uint32_t));
-  memcpy(kv->valuesz, mr->HEAD[id]->kv->valuesz, sizeof(uint32_t));
+  memcpy(&kv->key, &mr->HEAD[id]->kv->key, mr->HEAD[id]->kv->keysz);
+  memcpy(&kv->value, &mr->HEAD[id]->kv->value, mr->HEAD[id]->kv->valuesz);
+  memcpy(&kv->keysz, &mr->HEAD[id]->kv->keysz, sizeof(uint32_t));
+  memcpy(&kv->valuesz, &mr->HEAD[id]->kv->valuesz, sizeof(uint32_t));
   //=======================================================
 
   // remove head
