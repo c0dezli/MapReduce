@@ -72,10 +72,12 @@ typedef int (*reduce_fn)(struct map_reduce *mr, int outfd, int nmaps);
  */
 struct map_reduce {
 	pthread_mutex_t _lock;						// Create the lock
+	
 	pthread_t *map_threads,
 						 reduce_thread;
-	pthread_cond_t *not_full,
-								 *not_empty;
+
+	pthread_cond_t *map_cv,
+								 *reduce_cv;
 
 	struct buffer_node *buffer_list,	//set up buffer
 										 **HEAD, **TAIL;
@@ -208,4 +210,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif
