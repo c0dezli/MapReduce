@@ -250,21 +250,7 @@ mr_finish(struct map_reduce *mr) {
   //check array
 }
 
-/**
- * Called by a Map thread each time it produces a key-value pair to be consumed
- * by the Reduce thread.
- * If the framework cannot currently store another
- * key-value pair, this function should block until it can.
- *
- * mr  Pointer to the MapReduce instance
- * id  Identifier of this Map thread, from 0 to (nmaps - 1)
- * kv  Pointer to the key-value pair that was produced by Map.  This pointer
- *     belongs to the caller, so you must copy the key and value data if you
- *     wish to store them somewhere.
- *
- * Returns 1 if one key-value pair is successfully produced (success), -1 on
- * failure.  (This convention mirrors that of the standard "write" function.)
- */
+
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 {
@@ -279,13 +265,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
     if(pthread_cond_wait(&mr->map_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
-  // allocate TAIL->next
-  //mr->TAIL[id]->next = malloc(sizeof(struct buffer_node));
   struct buffer_node *new_node = mr->TAIL[id]->next;
-  // allocate TAIL->next->kv
-  //new_node->kv = malloc(kv_size);
-
-  //if(new_node == NULL || new_node->kv == NULL) return -1;
   if(new_node == NULL) return -1;
 
   int addition = 0;
@@ -309,7 +289,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   mr->count[id]++;
 
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
-  printf("ID is %d, Count is %d, new_node->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], new_node->valuesz, mr->size[id]);
+  printf("ID is %d, Count is %d,  mr->size[id] is %d\n", id, mr->count[id], mr->size[id]);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
@@ -317,23 +297,6 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 	return 1; // successful
 }
 
-/**
- * Called by the Reduce function to consume a key-value pair from a given Map
- * thread.  If there is no key-value pair available, this function should block
- * until one is produced (in which case it will return 1) or the specified Map
- * thread returns (in which case it will return 0).
- *
- * mr  Pointer to the MapReduce instance
- * id  Identifier of Map thread from which to consume
- * kv  Pointer to the key-value pair that was produced by Map.  The caller is
- *     responsible for allocating memory for the key and value a of time and
- *     setting the pointer and size fields for each to the location and size of
- *     the allocated buffer.
- *
- * Returns 1 if one pair is successfully consumed, 0 if the Map thread returns
- * without producing any more pairs, or -1 on error.  (This convention mirrors
- * that of the standard "read" function.)
- */
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
@@ -347,7 +310,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   }
   if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
 
-  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
+
 
   // read from head
   int kv_size = 0;
