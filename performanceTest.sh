@@ -10,7 +10,9 @@ std=0
 
 for i in `seq 1 20`;  
 do
-./mr-wordc thread_num output_
+./mr-wordc thread_num | output_
+
+#./mr-wordc thread_num output_
 #./testtest.c output_
 #array[i-1]=output_
 let "array[i-1]=output_"
