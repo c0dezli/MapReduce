@@ -153,9 +153,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
        mr->TAIL[i]->next = mr->HEAD[i];
      }
    }
-
-
-
 	 return mr;
 }
 
@@ -209,10 +206,10 @@ mr_destroy(struct map_reduce *mr) {
     free(mr->HEAD[i]);
     free(mr->TAIL[i]);
   }
-  free(mr->HEAD);
-  free(mr->TAIL);
-
-  free(mr->buffer_list);
+  // free(mr->HEAD);
+  // free(mr->TAIL);
+  //
+  // free(mr->buffer_list);
   free(mr->count);
   free(mr->size);
   free(mr->infd_failed);
