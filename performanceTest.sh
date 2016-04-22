@@ -1,16 +1,16 @@
 #!/bin/bash
 
 
-thread_num=$1
-output_=$2
+#thread_num=$1
+#output_=$2
 total=0
 avg=0
 std=0
-
+output_=0
 
 for i in `seq 1 20`;  
 do
-./mr-wordc thread_num | output_
+./tester.c | output_
 
 #./mr-wordc thread_num output_
 #./testtest.c output_
