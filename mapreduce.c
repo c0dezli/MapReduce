@@ -216,14 +216,10 @@ mr_finish(struct map_reduce *mr) {
   // close threads
   for(int i=0; i<(mr->n_threads); i++) {
       if (mr->map_thread_failed[i] == 0) { //success
-        if(pthread_join(mr->map_threads[i], &mr->map_return_values[i])) { // failed
-          return -1;
-        } else {
-          mr->map_thread_count--;
-        }
-      //pthread_cond_signal(&mr->not_empty[i]);
+        pthread_join(mr->map_threads[i], &mr->map_return_values[i]))  // failed
       }
   }
+  mr->map_thread_count == 0;
 
   if(mr->reduce_thread_failed == 0) // success
     if(pthread_join(mr->reduce_thread, &reduce_return_value)) // failed
