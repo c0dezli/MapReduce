@@ -103,7 +103,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
        mr->infd_failed[i] = -1;
    }
    mr->_lock = malloc(threads * sizeof(pthread_mutex_t));
-   if (mr->lock == NULL) return NULL;
+   if (mr->_lock == NULL) return NULL;
 
    mr->map_cv = malloc(threads * sizeof(pthread_cond_t));
    if(mr->map_cv == NULL) return NULL;
@@ -112,9 +112,9 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    if(mr->reduce_cv == NULL) return NULL;
 
    for (int i=0; i<threads; i++) {
-       pthread_mutex_init(mr->_lock[i], NULL);
-       pthread_cond_init(mr->map_cv[i], NULL);
-       pthread_cond_init(mr->reduce_cv[i], NULL);
+       pthread_mutex_init(&mr->_lock[i], NULL);
+       pthread_cond_init(&mr->map_cv[i], NULL);
+       pthread_cond_init(&mr->reduce_cv[i], NULL);
    }
 
    mr->count = calloc(threads, sizeof(int));
@@ -196,6 +196,7 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->TAIL);
   free(mr->map_cv);
   free(mr->reduce_cv);
+  free(mr->_lock);
   free(mr->count);
   free(mr->size);
   free(mr->infd_failed);
