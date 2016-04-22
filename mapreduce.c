@@ -270,8 +270,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   }
 
   // create new node
-  struct buffer_node *NEW = calloc(1, sizeof(1024));//struct buffer_node));
-  struct kvpair *new_kv = calloc(1, sizeof(1024));//struct kvpair));
+  struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
+  struct kvpair *new_kv = malloc(kv_size);//struct kvpair));
   if(NEW == NULL || new_kv == NULL) return -1;
 
 
