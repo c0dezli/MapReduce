@@ -228,10 +228,10 @@ mr_finish(struct map_reduce *mr) {
 
   // Check
   for(int i=0; i<(mr->n_threads); i++) {
-    if (mr->outfd_failed   == -1 ||
-        reducefn_status    !=  0 ||
-        mr->infd_failed[i] == -1 ||
-        mapfn_status[i]    !=  0  )
+    if (mr->outfd_failed    == -1 ||
+        mr->reducefn_status !=  0 ||
+        mr->infd_failed[i]  == -1 ||
+        mr->mapfn_status[i] !=  0  )
       return -1;
   }
 
