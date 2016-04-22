@@ -93,9 +93,7 @@ struct map_reduce {
 			*infd, outfd,							  	// File discripter
 			*infd_failed, outfd_failed,
 			*map_thread_failed,
-			reduce_thread_failed,
-			*mapfn_failed,
-			reducefn_failed;
+			reduce_thread_failed;
 
 	struct args_helper *args;
 

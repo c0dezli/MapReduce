@@ -44,18 +44,17 @@ struct buffer_node{
  */
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
-  args->mr->mapfn_failed[args->id] = args->map(args->mr, args->infd, args->id, args->nmaps);
-  pthread_exit((void*) &args->mr->mapfn_failed[args->id]);
-  //return (void *)map_args;
+  int status = args->map(args->mr, args->infd, args->id, args->nmaps);
+  return (void*)(intptr_t)status;
 }
 
 /*	Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
-  args->mr->reducefn_failed = args->reduce(args->mr, args->outfd, args->nmaps);
-  pthread_exit((void*) &args->mr->reducefn_failed);
-  //return (void *)reduce_args;
+  int status = args->reduce(args->mr, args->outfd, args->nmaps);
+  return (void*)(intptr_t)status;
+
 }
 
 struct map_reduce*
@@ -71,7 +70,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // give meaningless init value
    mr->outfd = -1;
-   mr->reducefn_failed = -1;
    mr->reduce_thread_failed = -1;
    mr->outfd_failed = -1;
 
@@ -84,12 +82,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->map_threads = malloc(sizeof(pthread_t) * threads);
    if(mr->map_threads == NULL) return NULL;
 
-   mr->mapfn_failed= malloc(sizeof(int) * threads);
-   if(mr->mapfn_failed == NULL) return NULL;
-   else {
-     for(int i=0; i<threads; i++)
-       mr->mapfn_failed[i] = -1;
-   }
 
    mr->map_thread_failed = malloc(sizeof(int) * threads);
    if(mr->map_thread_failed == NULL) return NULL;
@@ -216,7 +208,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->infd_failed);
   free(mr->map_return_values);
   free(mr->map_thread_failed);
-  free(mr->mapfn_failed);
   free(mr->map_threads);
   free(mr->infd);
   free(mr->args);
@@ -247,11 +238,11 @@ mr_finish(struct map_reduce *mr) {
   mr->outfd_failed = close(mr->outfd);
 
   // check if success
-  if (mr->outfd_failed == -1 || mr->reducefn_failed != 0)
+  if (mr->outfd_failed == -1 || (int)(intptr_t)reduce_return_value != 0)
     return -1;
 
   for(int i=0; i<(mr->n_threads); i++){
-      if (mr->infd_failed[i] == -1 || mr->mapfn_failed[i] != 0)
+      if (mr->infd_failed[i] == -1 || (int)(intptr_t)mr->map_return_values[i] != 0)
         return -1;  // failed
   }
 
@@ -349,13 +340,12 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   if(kv == NULL) return -1;
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
-  //pthread_mutex_lock(&mr->_lock[id]);
-  if((int)(intptr_t)mr->mapfn_failed[id] == 0) return 0; // no more pairs
   // make surew there is value to consume
-  while(mr->count[id] <= 0 && (int)(intptr_t)mr->mapfn_failed[id] == -1) {
+  while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
     //pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
+  if((int)(intptr_t)mr->map_return_values[id] == 0) return 0; // no more pairs
 
   printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
 
