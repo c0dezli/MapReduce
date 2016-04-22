@@ -298,7 +298,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   mr->count[id]++;
 
   //printf("ID is %d, Count is %d, Valuesz is %d, value is %s\n", id, mr->count[id], mr->TAIL[id]->kv->valuesz, (char *)mr->TAIL[id]->kv->value);
-  printf("ID is %d, Count is %d, mr->TAIL[id]->valuesz is %d\n", id, mr->count[id], new_node->valuesz);
+  printf("ID is %d, Count is %d, new_node->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], new_node->valuesz, mr->size[id]);
 
   pthread_cond_signal (&mr->map_cv[id]);//from demo code
   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
@@ -326,7 +326,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
 int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 {
-  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz);
+  printf("ID is %d, Count is %d, mr->HEAD[id]->valuesz is %d, mr->size[id] is %d\n", id, mr->count[id], mr->HEAD[id]->valuesz, mr->size[id]);
   if(kv == NULL) return -1;
 
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
