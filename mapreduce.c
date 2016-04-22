@@ -354,7 +354,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
 
   // make surew there is value to consume
   while(mr->count[id] == 0 || mr->HEAD[id] == NULL) {
-    if(mr->map_return_values[id]!= 0) return 0; // map function call failed
+    //if(mr->map_return_values[id]!= 0) return 0; // map function call failed
     //if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
     pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]); // wait failed
   }
