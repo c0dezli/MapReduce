@@ -45,6 +45,7 @@ struct buffer_node{
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
   int status = args->map(args->mr, args->infd, args->id, args->nmaps);
+  //pthread_exit
   return (void*)(intptr_t)status;
 }
 
@@ -54,7 +55,6 @@ static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
   int status = args->reduce(args->mr, args->outfd, args->nmaps);
   return (void*)(intptr_t)status;
-
 }
 
 struct map_reduce*
@@ -72,7 +72,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->outfd = -1;
    mr->reduce_thread_failed = -1;
    mr->outfd_failed = -1;
-
+   mr->map_thread_count = threads;
    mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
    if(mr->args == NULL) return NULL;
 
@@ -218,8 +218,10 @@ mr_finish(struct map_reduce *mr) {
       if (mr->map_thread_failed[i] == 0) { //success
         if(pthread_join(mr->map_threads[i], &mr->map_return_values[i])) { // failed
           return -1;
+        } else {
+          mr->map_thread_count--;
         }
-      pthread_cond_signal(&mr->not_empty[i]);
+      //pthread_cond_signal(&mr->not_empty[i]);
       }
   }
 
@@ -301,12 +303,12 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
 
   // make surewthere is value to consume
-  while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
+  while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0) {
     if(pthread_cond_wait(&mr->not_empty[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
   // no more pairs
-  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
+  if(mr->count[id] <= 0 && mr->map_thread_count == 0){
     if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
     printf("DONE! Consume: ID = %d, no more pairs, return 0\n", id);
     return 0;

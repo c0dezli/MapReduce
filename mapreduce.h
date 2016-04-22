@@ -92,7 +92,8 @@ struct map_reduce {
 			*infd, outfd,							  	// File discripter
 			*infd_failed, outfd_failed,
 			*map_thread_failed,
-			reduce_thread_failed;
+			reduce_thread_failed,
+			map_thread_count;
 
 	struct args_helper *args;
 
@@ -209,4 +210,4 @@ int mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv);
  */
 int mr_consume(struct map_reduce *mr, int id, struct kvpair *kv);
 
-#endif         		 				
+#endif
