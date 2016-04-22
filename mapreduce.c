@@ -340,18 +340,16 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
     if(pthread_cond_wait(&mr->reduce_cv[id], &mr->_lock[id]) != 0) return -1; // wait failed
   }
 
-  // get the kv_size
-  int kv_size = mr->HEAD[id]->kv->keysz + mr->HEAD[id]->kv->valuesz + 2 * sizeof(uint32_t);
-
   // read from head
-  int addition = 0;
-  memmove(kv->key, &mr->HEAD[id]->kv+addition, kv->keysz);
-  addition+=kv->keysz;
-  memmove(kv->value, &mr->HEAD[id]->kv+addition, kv->valuesz);
-  addition+=kv->valuesz;
-  memmove(&kv->keysz, &mr->HEAD[id]->kv+addition, sizeof(uint32_t));
-  addition+=sizeof(uint32_t);
-  memmove(&kv->valuesz, &mr->HEAD[id]->kv+addition, sizeof(uint32_t));
+  int kv_size = 0;
+  memmove(kv->key, &mr->HEAD[id]->kv+kv_size, kv->keysz);
+  kv_size+=kv->keysz;
+  memmove(kv->value, &mr->HEAD[id]->kv+kv_size, kv->valuesz);   //TODO
+  kv_size+=kv->valuesz;
+  memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
+  kv_size+=sizeof(uint32_t);
+  memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
+  kv_size+=sizeof(uint32_t);
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
