@@ -1,5 +1,5 @@
 == Team members ==
-Xiang Li
+Xiang Li 
 Jesse Rong
 
 == Performance evaluation ==
@@ -21,8 +21,15 @@ mr_wordc
   1kB buffer:
   10kB buffer:
  
-We expect that the more threads there are, the faster it will take the program to run. Also, the bigger the buffers are, the faster the program will be.
+We expect that with  increasing threads, program will run faster and then slower once there are too many threads. Also, the bigger the buffers are, the faster the program will be.
 
+In addition to the 6 given functions and structure, our c program has 2 more structures, one for the wrapper functions and one for the buffer, which we implemented as a linked list. We have 2 extra functions, both are wrapper functions for map and reduce.  
+
+The reason we used a linked list is because it's easier to keep track of where to produce and where to consume compared to an array. 
+
+Within the .h file's map_reduce structure, we put a lock, 2 conditional variables, the head and tail nodes to our linked list, informcation about the number and size of key values and file descriptors. 
+
+In the .c program, we had a lot of trouble with memory. We spent several hours finding out where and why some memory would not be initialized or freed. 
 
 == Sources consulted ==
 (please cite here as well as in comments by the relevant code)
