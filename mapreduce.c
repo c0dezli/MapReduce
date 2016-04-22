@@ -292,10 +292,10 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv)
   struct buffer_node *NEW = malloc(sizeof(struct buffer_node));
   struct kvpair *new_kv = malloc(sizeof(struct kvpair));
   //=============================================
-  memcpy(new_kv->key, kv->key, kv->keysz);
-  memcpy(new_kv->value, kv->value, kv->valuesz);
-  memcpy(&new_kv->keysz, &kv->keysz, sizeof(uint32_t));
-  memcpy(&new_kv->valuesz, &kv->valuesz, sizeof(uint32_t));
+  memmove(new_kv->key, kv->key, kv->keysz);
+  memmove(new_kv->value, kv->value, kv->valuesz);
+  memmove(&new_kv->keysz, &kv->keysz, sizeof(uint32_t));
+  memmove(&new_kv->valuesz, &kv->valuesz, sizeof(uint32_t));
  //=============================================
   NEW->kv = new_kv;
   NEW->next = mr->HEAD[id];
@@ -351,10 +351,10 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
   //=======================================================
   //kv = mr->HEAD[id]->kv;
 
-  memcpy(kv->key, mr->HEAD[id]->kv->key, mr->HEAD[id]->kv->keysz);
-  memcpy(kv->value, mr->HEAD[id]->kv->value, mr->HEAD[id]->kv->valuesz);
-  memcpy(&kv->keysz, &mr->HEAD[id]->kv->keysz, sizeof(uint32_t));
-  memcpy(&kv->valuesz, &mr->HEAD[id]->kv->valuesz, sizeof(uint32_t));
+  memmove(kv->key, mr->HEAD[id]->kv->key, mr->HEAD[id]->kv->keysz);
+  memmove(kv->value, mr->HEAD[id]->kv->value, mr->HEAD[id]->kv->valuesz);
+  memmove(&kv->keysz, &mr->HEAD[id]->kv->keysz, sizeof(uint32_t));
+  memmove(&kv->valuesz, &mr->HEAD[id]->kv->valuesz, sizeof(uint32_t));
 
   // remove head
   mr->HEAD[id] = mr->HEAD[id]->next;
