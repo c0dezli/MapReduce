@@ -72,8 +72,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    // File Descriptors
    mr->outfd = -1;
    mr->outfd_failed = -1;
-   mr->infd = malloc (sizeof(int) * threads);
-   mr->infd_failed = malloc(sizeof(int) * threads);
+   mr->infd = malloc (threads * sizeof(int));
+   mr->infd_failed = malloc(threads * sizeof(int));
 
    // Threads
    mr->map_threads = malloc(threads * sizeof(pthread_t));
@@ -82,7 +82,7 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->reducefn_status = -1;
 
    // Arguments of Funtion Wappers
-   mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
+   mr->args = malloc ((threads + 1) * sizeof(struct args_helper));
 
    // Lock & Conditional Variables
    mr->_lock = malloc(threads * sizeof(pthread_mutex_t));
@@ -96,8 +96,9 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    }
 
    // Init the Buffer List
+   mr->buffer = malloc(threads * sizeof(char*));
    for(int i = 0; i < threads; i++){
-     mr->buffer[i] = malloc(MR_BUFFER_SIZE*sizeof(char));
+     mr->buffer[i] = malloc(MR_BUFFER_SIZE * sizeof(char));
      mr->size[i] = 0;
    }
 	 return mr;
