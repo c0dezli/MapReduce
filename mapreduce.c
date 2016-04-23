@@ -97,6 +97,8 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // Init the Buffer List
    mr->buffer = malloc(threads * sizeof(char*));
+   mr->size = malloc(threads * sizeof(int));
+
    for(int i = 0; i < threads; i++){
      mr->buffer[i] = malloc(MR_BUFFER_SIZE * sizeof(char));
      mr->size[i] = 0;
