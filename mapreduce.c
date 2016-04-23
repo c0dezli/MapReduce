@@ -176,7 +176,6 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->not_empty);
   free(mr->_lock);
 
-  free(mr->count);
   free(mr->size);
   free(mr->args);
 
