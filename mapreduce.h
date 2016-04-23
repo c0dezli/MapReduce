@@ -79,9 +79,7 @@ struct map_reduce {
 	pthread_cond_t *not_full,
 								 *not_empty;
 
-	void **map_return_values;
-
-	struct buffer_node **HEAD, **TAIL; // a list of HEAD and TAIL pointers
+	char **buffer;
 
 	map_fn map;												// Declear the function pointers
 	reduce_fn reduce;
@@ -92,14 +90,9 @@ struct map_reduce {
 			*infd, outfd,							  	// File discripter
 			*infd_failed, outfd_failed,
 			*mapfn_status,
-			reducefn_status,
-			map_thread_count;
+			reducefn_status;
 
 	struct args_helper *args;
-
-//2 index for each thread. one for where consume. one for where produce.
-//know how many are free. 1023-used bytes
-//into buffer pointers to the 2 key values and the size of the key values (4)
 };
 
 /**

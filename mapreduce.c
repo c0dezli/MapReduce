@@ -27,22 +27,14 @@
 #define MR_BUFFER_SIZE 1024
 
 // The args for map function
-struct args_helper{
+struct args_helper {
  struct map_reduce *mr;
  int infd, outfd, nmaps, id;
  map_fn map;
  reduce_fn reduce;
 };
 
-// The node struct for Linked buffer list
-struct buffer_node{
-  void *kv;
-  uint32_t keysz;
-	uint32_t valuesz;
-  struct buffer_node *next;
-};
-
-/*	Helper function that can be passed to the pthread_create to call the map_fn
+/* Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
@@ -51,7 +43,7 @@ static void *map_wrapper(void* map_args) {
   return NULL;
 }
 
-/*	Helper function that can be passed to the pthread_create to call the reduce_fn
+/* Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* reduce_args) {
   struct args_helper *args = (struct args_helper *) reduce_args;
@@ -89,9 +81,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    mr->mapfn_status = malloc(threads * sizeof(int));
    mr->reducefn_status = -1;
 
-   mr->map_thread_count = threads;
-   mr->map_return_values = malloc(threads * sizeof(void*));
-
    // Arguments of Funtion Wappers
    mr->args = malloc (sizeof(struct args_helper) * (threads + 1));
 
@@ -107,19 +96,9 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    }
 
    // Init the Buffer List
-   mr->count = calloc(threads, sizeof(int)); // Counts of kv_pairs
-   mr->size = calloc(threads, sizeof(int));  // Size in bytes of the kv_pairs
+   mr->size = malloc(threads * sizeof(int));
+   mr->consume_pointers = malloc(threads * sizeof(int));
 
-   mr->HEAD = malloc(sizeof(struct buffer_node *) * threads);
-   mr->TAIL = malloc(sizeof(struct buffer_node *) * threads);
-
-   for(int i=0; i<threads; i++){
-     mr->HEAD[i] = malloc(MR_BUFFER_SIZE);
-     mr->TAIL[i] = mr->HEAD[i];
-     // make a cycle
-     mr->HEAD[i]->next = mr->TAIL[i];
-     mr->TAIL[i]->next = mr->HEAD[i];
-   }
 	 return mr;
  }
 }
@@ -133,7 +112,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 	for(int i=0; i<(mr->n_threads); i++) {
     // Assign different fd to every map thread
     mr->infd[i] = open(inpath, O_RDONLY, 644);
-    if (mr->infd[i] ==  -1) {
+    if (mr->infd[i] == -1) {
       close(mr->infd[i]);
       perror("Cannot open input file\n");
       return -1;
@@ -188,14 +167,11 @@ mr_destroy(struct map_reduce *mr) {
   free(mr->infd_failed);
 
   free(mr->map_threads);
-
   free(mr->mapfn_status);
-  free(mr->map_return_values);
 
   free(mr->not_full);
   free(mr->not_empty);
   free(mr->_lock);
-
 
   free(mr->count);
   free(mr->size);
@@ -240,97 +216,66 @@ mr_finish(struct map_reduce *mr) {
 
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
-  if(kv == NULL) return -1;
-  // get the node_size
-  int node_size = kv->keysz + kv->valuesz + 2 * sizeof(uint32_t) + sizeof(struct buffer_node *),
-      offset  = 0;
 
-  pthread_mutex_lock(&mr->_lock[id]); // lock failed
+  pthread_mutex_lock(&mr->_lock[id]); // lock 
 
+  int kv_size = keysz + valsz + 8;
   // first check if the buffer is overflow
-  while(mr->size[id] + node_size > MR_BUFFER_SIZE) {
-    if(pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]) != 0) return -1; // wait failed
+  while((mr->size[id]+kv_size) >= MR_BUFFER_SIZE) {
+    pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]); // wait
   }
-  // if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
-  //   if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
-  //   printf("DONE! Produce: ID = %d, no more pairs, return 0\n", id);
-  //   return -1;
-  // }
-  struct buffer_node *new_node = mr->TAIL[id]->next;
-  if(new_node == NULL) return -1;
 
-  memmove(&new_node->kv+offset, kv->key, kv->keysz);
-  offset+=kv->keysz;
-  memmove(&new_node->kv+offset, kv->value, kv->valuesz);
-  // offset+=kv->valuesz;
-  // memmove(&new_node->keysz, &kv->keysz, sizeof(uint32_t));
-  // offset+=sizeof(uint32_t);
-  // memmove(&new_node->kv+offset, &kv->valuesz, sizeof(uint32_t));
+  memmove(&mr->buffer[id][mr->size[id]], &kv->keysz, 4);
+	mr->size[id] += 4;
 
-  new_node->keysz = kv->keysz;
-  new_node->valuesz = kv->valuesz;
+	memmove(&mr->buffer[id][mr->size[id]], kv->key, kv->keysz);
+	mr->size[id] += kv->keysz;
 
-  // change tail->next to tail
-  mr->TAIL[id] = new_node;
-  mr->TAIL[id]->next = mr->HEAD[id];
+	memmove(&mr->buffer[id][mr->size[id]], &kv->valuesz, 4);
+	mr->size[id] += 4;
 
-  // add the size
-  mr->size[id] += node_size;
-  mr->count[id]++;
+	memmove(&mr->buffer[id][mr->size[id]], kv->value, kv->valuesz);
+	mr->size[id] += kv->valuesz;
 
-  //printf("Produce: ID is %d, Count is %d,  mr->size[id] is %d, node_size is %d\n", id, mr->count[id], mr->size[id], node_size);
-
-  pthread_cond_signal (&mr->not_empty[id]);//from demo code
-  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
+  pthread_cond_signal (&mr->not_empty[id]); //Send the signal
+  pthread_mutex_unlock(&mr->_lock[id]); // unlock failed
 
 	return 1;
 }
 
 int
-mr_consume(struct map_reduce *mr, int id, struct kvpair *kv)
-{
-  if(pthread_mutex_lock(&mr->_lock[id]) != 0) return -1; // lock failed
+mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
+  pthread_mutex_lock(&mr->_lock[id]); // lock
 
   // make surewthere is value to consume
-  while(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == -1) {
-    if(pthread_cond_wait(&mr->not_empty[id], &mr->_lock[id]) != 0) return -1; // wait failed
+  while(mr->size[id] <= 0) {
+    if(mr->mapfn_status[id] == 0){  // Map function done its work
+      printf("DONE! Consume: ID = %d, mr->size[id] is %d, no more pairs, return 0\n", id, mr->size[id]);
+      return 0;
+    }
+    pthread_cond_wait(&mr->not_empty[id], &mr->_lock[id]); // wait
   }
 
-  // no more pairs
-  if(mr->count[id] <= 0 && (int)(intptr_t)mr->map_return_values[id] == 0){
-    if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
-    printf("DONE! Consume: ID = %d, mr->size[id] is %d, no more pairs, return 0\n", id, mr->size[id]);
-    return 0;
-  }
+  int offset = 0;
+  memmove(&kv->keysz, &mr->buffer[id][offset], 4);
+	offset += 4;
+	memmove(kv->key, &mr->buffer[id][offset], kv->keysz);
+	offset += kv->keysz;
+	memmove(&kv->valuesz, &mr->buffer[id][offset], 4);
+	offset += 4;
 
-  // read from head
-  // read from head
-  int offset = mr->HEAD[id]->keysz;
-  memmove(kv->key, &mr->HEAD[id]->kv, (int)mr->HEAD[id]->keysz);
-  memmove(kv->value, &mr->HEAD[id]->kv+offset, (int)mr->HEAD[id]->valuesz);   //TODO
+	memmove(kv->value, &mr->buffer[id][offset], kv->valuesz);
+	offset += kv->valuesz;
 
-  kv->keysz = mr->HEAD[id]->keysz;
-  kv->valuesz = mr->HEAD[id]->valuesz;
-
-  int node_size = kv->keysz + kv->valuesz + 2 * sizeof(uint32_t) + sizeof(struct buffer_node *);
-
-  // memmove(&kv->keysz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-  // kv_size+=sizeof(uint32_t);
-  // memmove(&kv->valuesz, &mr->HEAD[id]->kv+kv_size, sizeof(uint32_t));
-  // kv_size+=sizeof(uint32_t);
-
-  // remove head
-  mr->HEAD[id] = mr->HEAD[id]->next;
-  mr->TAIL[id]->next = mr->HEAD[id];
+  mr->size[id] -= offset;
+  memmove(&mr->buffer[id][0], &mr->buffer[id][offset], (MR_BUFFER_SIZE - offset));
 
   // decrease size
   mr->size[id] -= node_size;
-  mr->count[id]--;
 
   pthread_cond_signal (&mr->not_full[id]);//from demo code
-  if(pthread_mutex_unlock(&mr->_lock[id]) != 0) return -1; // unlock failed
+  pthread_mutex_unlock(&mr->_lock[id]); // unlock failed
 
   //printf("Consume: ID is %d, Count is %d, mr->size[id] is %d, node_size is %d\n", id, mr->count[id], mr->size[id], node_size);
-
 	return 1; // successful
 }
