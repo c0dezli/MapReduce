@@ -157,7 +157,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    free(mr->size[i]);
+    free(mr->buffer[i]);
   }
 
   free(mr->infd);
@@ -216,7 +216,7 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
 
   pthread_mutex_lock(&mr->_lock[id]); // lock
 
-  int kv_size = kv->keysz + kv->valsz + 8;
+  int kv_size = kv->keysz + kv->valuesz + 8;
   // first check if the buffer is overflow
   while((mr->size[id]+kv_size) >= MR_BUFFER_SIZE) {
     pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]); // wait
@@ -264,11 +264,10 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
 	memmove(kv->value, &mr->buffer[id][offset], kv->valuesz);
 	offset += kv->valuesz;
 
+  // decrease size
   mr->size[id] -= offset;
   memmove(&mr->buffer[id][0], &mr->buffer[id][offset], (MR_BUFFER_SIZE - offset));
 
-  // decrease size
-  mr->size[id] -= node_size;
 
   pthread_cond_signal (&mr->not_full[id]);//from demo code
   pthread_mutex_unlock(&mr->_lock[id]); // unlock failed
