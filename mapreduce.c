@@ -37,9 +37,12 @@ struct args_helper {
 /* Helper function that can be passed to the pthread_create to call the map_fn
  */
 static void *map_wrapper(void* map_args) {
+  // Reconstruct the Arguments
   struct args_helper *args = (struct args_helper *) map_args;
+  // Call the map function and save the return value
   args->mr->mapfn_status[args->id] =
       args->map(args->mr, args->infd, args->id, args->nmaps);
+  // Send a signal to mr_consume after the function returns
   pthread_cond_signal(&args->mr->not_empty[args->id]);
   return NULL;
 }
@@ -47,7 +50,9 @@ static void *map_wrapper(void* map_args) {
 /* Helper function that can be passed to the pthread_create to call the reduce_fn
  */
 static void *reduce_wrapper(void* reduce_args) {
+  // Reconstruct the Arguments
   struct args_helper *args = (struct args_helper *) reduce_args;
+  // Call the reduce function and save the return value
   args->mr->reducefn_status =
     args->reduce(args->mr, args->outfd, args->nmaps);
   return NULL;
@@ -64,11 +69,11 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    if(mr == 0) {  // Check Success
      free(mr);
      return NULL;
-   } else {
+   }
    // Save the Parameters
-   mr->map = map;           // Save the function inside the sturcture
+   mr->map = map;
    mr->reduce = reduce;
-   mr->n_threads = threads; // Save the static data
+   mr->n_threads = threads;
 
    // File Descriptors
    mr->outfd = -1;
@@ -78,7 +83,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // Threads
    mr->map_threads = malloc(threads * sizeof(pthread_t));
-
    mr->mapfn_status = malloc(threads * sizeof(int));
    mr->reducefn_status = -1;
 
@@ -105,7 +109,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
      mr->size[i] = 0;
    }
 	 return mr;
- }
 }
 
 int
@@ -122,7 +125,10 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
       perror("Cannot open input file\n");
       return -1;
     }
+    // Give map status a init value
     mr->mapfn_status[i] = -1;
+
+    // Construct the map arguments
     map_args = &(mr->args[i]);
     map_args->mr = mr;
     map_args->map = mr->map;
@@ -223,7 +229,8 @@ mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
   pthread_mutex_lock(&mr->_lock[id]); // lock
 
   int kv_size = kv->keysz + kv->valuesz + 8;
-  // first check if the buffer is overflow
+
+  // First check if the buffer is overflow
   while((mr->size[id]+kv_size) >= MR_BUFFER_SIZE) {
     pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]); // wait
   }
@@ -250,11 +257,9 @@ int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
   pthread_mutex_lock(&mr->_lock[id]); // lock
 
-
  // make surewthere is value to consume
   while(mr->size[id] <= 0) {
     if(mr->mapfn_status[id] == 0){  // Map function done its work
-      printf("DONE! Consume: ID = %d, mr->size[id] is %d, no more pairs, return 0\n", id, mr->size[id]);
       return 0;
     }
     pthread_cond_wait(&mr->not_empty[id], &mr->_lock[id]); // wait
@@ -271,7 +276,7 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
 	memmove(kv->value, &mr->buffer[id][offset], kv->valuesz);
 	offset += kv->valuesz;
 
-  // decrease size
+  // Decrease size
   mr->size[id] -= offset;
   memmove(&mr->buffer[id][0], &mr->buffer[id][offset], (MR_BUFFER_SIZE - offset));
 
