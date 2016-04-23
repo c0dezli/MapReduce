@@ -45,13 +45,20 @@ We expect that with increasing threads, the program will run faster and then
 slower once there are too many threads. Also, the bigger the buffers are, the
 faster the program will execute.
 
+We found that our expectations were somewhat correct. For panger, as the number
+ of threads increased, the program got slower. For arabian nights, as the 
+number of threads increased, the program got faster. For hamlet, the 
+program got slower and then faster. As the buffers got bigger, panger
+got faster then slower, hamlet got slower then faster, and arabian
+nights pretty much stayed the same. 
+
 In addition to the 6 given functions and structure, our c program has 1 more
 structure for the wrapper functions. We have 2 extra functions, both are wrapper
 functions for map and reduce.
 
 Within the .h file's map_reduce structure, we put a lock, 2 conditional
-variables, the head and tail nodes to our linked list, informcation about the
-number and size of key values and file descriptors.
+variables, the head and tail nodes to our linked list, information about the
+number and size of key values and file descriptors. The conditional variables and locks were to prevent deadlock. 
 
 In the .c program, we had a lot of trouble with memory. We spent many hours
 over several days finding out where and why some memory would not be initialized
@@ -68,6 +75,10 @@ http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-
 http://stackoverflow.com/questions/29350073/invalid-write-of-size-8-after-a-malloc
 
 http://stackoverflow.com/questions/143123/how-to-create-a-buffer-for-reading-socket-data-in-c
+
+Lecture 30,31 Demo Code
+
+Code that the professor showed me: test-pthreads.c
 
 # Usage
 
