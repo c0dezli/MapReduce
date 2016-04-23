@@ -96,8 +96,10 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
    }
 
    // Init the Buffer List
-   mr->size = malloc(threads * sizeof(int));
-
+   for(int i = 0; i < threads; i++){
+     mr->buffer[i] = malloc(MR_BUFFER_SIZE*sizeof(char));
+     mr->size[i] = 0;
+   }
 	 return mr;
  }
 }
@@ -159,6 +161,7 @@ mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
     free(mr->buffer[i]);
   }
+  free(mr->buffer);
 
   free(mr->infd);
   free(mr->infd_failed);
