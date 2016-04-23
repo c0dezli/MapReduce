@@ -97,7 +97,6 @@ mr_create(map_fn map, reduce_fn reduce, int threads) {
 
    // Init the Buffer List
    mr->size = malloc(threads * sizeof(int));
-   mr->consume_pointers = malloc(threads * sizeof(int));
 
 	 return mr;
  }
@@ -158,10 +157,8 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
 void
 mr_destroy(struct map_reduce *mr) {
   for(int i=0; i<mr->n_threads; i++){
-    free(mr->HEAD[i]);
+    free(mr->size[i]);
   }
-  free(mr->HEAD);
-  free(mr->TAIL);
 
   free(mr->infd);
   free(mr->infd_failed);
@@ -217,9 +214,9 @@ mr_finish(struct map_reduce *mr) {
 int
 mr_produce(struct map_reduce *mr, int id, const struct kvpair *kv) {
 
-  pthread_mutex_lock(&mr->_lock[id]); // lock 
+  pthread_mutex_lock(&mr->_lock[id]); // lock
 
-  int kv_size = keysz + valsz + 8;
+  int kv_size = kv->keysz + kv->valsz + 8;
   // first check if the buffer is overflow
   while((mr->size[id]+kv_size) >= MR_BUFFER_SIZE) {
     pthread_cond_wait(&mr->not_full[id], &mr->_lock[id]); // wait
