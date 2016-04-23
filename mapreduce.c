@@ -122,7 +122,7 @@ mr_start(struct map_reduce *mr, const char *inpath, const char *outpath) {
       perror("Cannot open input file\n");
       return -1;
     }
-
+    mr->mapfn_status[i] = -1;
     map_args = &(mr->args[i]);
     map_args->mr = mr;
     map_args->map = mr->map;
