@@ -249,7 +249,8 @@ int
 mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
   pthread_mutex_lock(&mr->_lock[id]); // lock
 
-  // make surewthere is value to consume
+
+ // make surewthere is value to consume
   while(mr->size[id] <= 0) {
     if(mr->mapfn_status[id] == 0){  // Map function done its work
       printf("DONE! Consume: ID = %d, mr->size[id] is %d, no more pairs, return 0\n", id, mr->size[id]);
@@ -272,7 +273,6 @@ mr_consume(struct map_reduce *mr, int id, struct kvpair *kv) {
   // decrease size
   mr->size[id] -= offset;
   memmove(&mr->buffer[id][0], &mr->buffer[id][offset], (MR_BUFFER_SIZE - offset));
-
 
   pthread_cond_signal (&mr->not_full[id]);//from demo code
   pthread_mutex_unlock(&mr->_lock[id]); // unlock failed
