@@ -40,6 +40,7 @@ static void *map_wrapper(void* map_args) {
   struct args_helper *args = (struct args_helper *) map_args;
   args->mr->mapfn_status[args->id] =
       args->map(args->mr, args->infd, args->id, args->nmaps);
+  pthread_cond_signal(&args->mr->notempty[args->id]);
   return NULL;
 }
 
